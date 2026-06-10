@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Momenta - Engineering Architecture Addendum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="momenta-architecture.css" />
+</head>
+
+<body>
+
+  <section class="cover">
+    <div class="eyebrow">Momenta &middot; Engineering Addendum</div>
+    <h1>Engineering Architecture Addendum</h1>
+    <p class="subtitle">Technical architecture for the AI concierge, behavioral memory, recommendation engine, and
+      supply intelligence layers</p>
+    <p class="lede">A technical companion to the product and execution proposals.</p>
+
+    <dl class="meta">
+      <dt>Prepared for</dt>
+      <dd>Juliana Marulanda, CEO, Momenta</dd>
+      <dt>Prepared by</dt>
+      <dd>Henry Giwa</dd>
+      <dt>Subject</dt>
+      <dd>System architecture and engineering design</dd>
+      <dt>Date</dt>
+      <dd>May 2026</dd>
+    </dl>
+
+    <nav class="toc" aria-label="Table of contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#s1">Purpose of This Addendum</a></li>
+        <li><a href="#s2">High-Level Architecture Overview</a></li>
+        <li><a href="#s3">Core System Principle: Grounded AI</a></li>
+        <li><a href="#s4">User-Side Concierge Flow</a></li>
+        <li><a href="#s5">Behavioral Memory Architecture</a></li>
+        <li><a href="#s6">Recommendation Engine</a></li>
+        <li><a href="#s7">Supply Intelligence Pipeline</a></li>
+        <li><a href="#s8">Data Model Overview</a></li>
+        <li><a href="#s9">AI Orchestration Layer</a></li>
+        <li><a href="#s10">Software System Fit With Existing Stack</a></li>
+        <li><a href="#s11">MVP Technical Scope</a></li>
+        <li><a href="#s12">Risks and Design Decisions</a></li>
+        <li><a href="#s13">Architecture Diagrams Summary</a></li>
+        <li><a href="#s14">Closing</a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <main class="page">
+
+    <section id="s1">
+      <h2><span class="num">Section 1</span>Purpose of This Addendum</h2>
+      <p>The first two documents covered direction and execution. This one covers the engineering shape underneath. It
+        explains how the AI concierge, behavioral memory, recommendation engine, and supply intelligence pipeline
+        actually connect to each other and to Momenta's existing stack.</p>
+      <p>This is not a final production specification. It is a blueprint for how the first versions could be built and
+        how they would evolve. It is detailed enough to show that there is a real technical plan behind the product
+        vision, while staying readable for a non-engineering founder.</p>
+      <p>A few non-negotiables guide the architecture:</p>
+      <ul>
+        <li>The LLM is not the source of truth. Momenta's approved supply layer is.</li>
+        <li>The system separates trusted, curated intelligence from the conversational AI surface that talks to users.
+        </li>
+        <li>The architecture should start small and extend the existing stack naturally rather than introducing new
+          infrastructure for its own sake.</li>
+      </ul>
+    </section>
+
+    <section id="s2">
+      <h2 class="section-break"><span class="num">Section 2</span>High-Level Architecture Overview</h2>
+      <p>At a high level, Momenta's system is made of three groups of components: a user-facing surface, a set of
+        intelligence layers in the middle, and a supply intelligence pipeline that runs in the background.</p>
+
+      <h4>User-facing surface</h4>
+      <ul>
+        <li><strong>Next.js frontend.</strong> The web and mobile-web experience users interact with. Concierge chat,
+          recommendations, booking flow, profile.</li>
+        <li><strong>WebSockets.</strong> Used to stream concierge responses and keep conversations live.</li>
+      </ul>
+
+      <h4>API and orchestration</h4>
+      <ul>
+        <li><strong>NestJS API.</strong> The main backend. Handles auth, session, REST and WebSocket endpoints, and
+          routes calls to the concierge and recommendation services.</li>
+        <li><strong>Concierge AI Orchestrator.</strong> A service inside the backend that coordinates the flow of a
+          single user message: intent extraction, memory lookup, recommendation retrieval, LLM call, response streaming.
+        </li>
+      </ul>
+
+      <h4>Intelligence layers</h4>
+      <ul>
+        <li><strong>Recommendation Engine.</strong> Selects and ranks candidate experiences for the concierge to
+          discuss.</li>
+        <li><strong>Behavioral Memory Layer.</strong> Stores and retrieves what the system knows about each user and
+          group.</li>
+        <li><strong>Curated Supply Database.</strong> The single source of truth for approved venues and experiences.
+        </li>
+      </ul>
+
+      <h4>Storage and retrieval</h4>
+      <ul>
+        <li><strong>PostgreSQL.</strong> Primary relational store for users, bookings, supply, conversations, memory,
+          and scoring.</li>
+        <li><strong>pgvector.</strong> Extension inside the same Postgres instance for semantic memory and similarity
+          search.</li>
+        <li><strong>Meilisearch.</strong> Fast keyword search over supply and internal lookups.</li>
+      </ul>
+
+      <h4>Background processing</h4>
+      <ul>
+        <li><strong>Redis + BullMQ.</strong> Job queues for the supply intelligence pipeline, embedding generation,
+          scoring, and any other async work.</li>
+        <li><strong>Workers.</strong> Independent processes that pick up jobs and write results back to Postgres.</li>
+      </ul>
+
+      <h4>Curation interface</h4>
+      <ul>
+        <li><strong>Human Review Interface.</strong> An internal Next.js dashboard for the curation team to review,
+          approve, or reject candidate supply.</li>
+      </ul>
+
+      <h4>Observability</h4>
+      <ul>
+        <li><strong>Sentry / BetterStack.</strong> Error tracking, uptime, queue health, and visibility into LLM and
+          worker failures.</li>
+      </ul>
+
+      <p>The orchestrator coordinates the flow, while the recommendation engine retrieves, filters, and ranks approved
+        supply. The LLM only sees the shortlist the recommendation engine returns, never the supply database directly.
+      </p>
+
+      <figure class="diagram">
+        <pre class="mermaid">
+flowchart TD
+    User["User App<br/>(Next.js)"] -->|HTTPS / WS| API["NestJS API"]
+    API --> Orchestrator["Concierge AI Orchestrator"]
+
+    Orchestrator --> Memory["Behavioral Memory Layer"]
+    Orchestrator --> RecEngine["Recommendation Engine"]
+    RecEngine --> Orchestrator
+    Orchestrator --> LLM["LLM Provider"]
+
+    RecEngine --> Supply[("Curated Supply Database")]
+    RecEngine --> PG[("PostgreSQL")]
+    RecEngine --> Vector[("pgvector")]
+    RecEngine --> Search[("Meilisearch")]
+
+    Memory --> PG
+    Memory --> Vector
+
+    Workers["BullMQ Workers"] --> Pipeline["Supply Intelligence Pipeline"]
+    Pipeline --> Review["Human Review Queue"]
+    Review --> Supply
+    Workers <--> Redis[("Redis")]
+
+    API --> Obs["Sentry / BetterStack"]
+    Workers --> Obs
+      </pre>
+        <figcaption>Diagram 1 &middot; High-Level Momenta AI Architecture</figcaption>
+      </figure>
+      <p class="flow-note"><em>Flow note: The orchestrator requests candidates from the recommendation engine. The
+          recommendation engine returns the top 2&ndash;3 ranked candidates. The orchestrator then sends the shortlist
+          and memory context to the LLM.</em></p>
+    </section>
+
+    <section id="s3">
+      <h2 class="section-break"><span class="num">Section 3</span>Core System Principle: Grounded AI</h2>
+      <p>The concierge should speak fluently, but it should only recommend what the system can trust.</p>
+      <p>Generic chatbots improvise from whatever is in their training data. That is a problem for Momenta in three
+        ways. The model can recommend places that do not exist or no longer exist. It can describe a place inaccurately.
+        And it gives Momenta no control over the curation quality that makes the brand work.</p>
+
+      <div class="callout">The LLM is not the source of truth. Momenta's approved supply layer is.</div>
+
+      <p>Grounding the AI in Momenta's approved supply layer solves this in a few ways:</p>
+      <ul>
+        <li><strong>No hallucinated recommendations.</strong> The LLM never invents venues. It only describes candidates
+          that the recommendation engine selected from the curated supply database.</li>
+        <li><strong>Brand trust holds.</strong> Every venue users see has passed Momenta's approval workflow. The AI's
+          job is to interpret, explain, and personalize the shortlist, not invent supply.</li>
+        <li><strong>Explainable answers.</strong> Because recommendations come from structured signals (scores, tags,
+          fit metrics), the system can explain why something was suggested instead of producing opaque output.</li>
+        <li><strong>Failure mode is honest.</strong> When the system does not have a good match, the concierge says so.
+          It does not pad the response with weaker options to look complete.</li>
+      </ul>
+
+      <div class="callout">The curated layer decides what can be recommended. The LLM decides how to say it.</div>
+    </section>
+
+    <section id="s4">
+      <h2 class="section-break"><span class="num">Section 4</span>User-Side Concierge Flow</h2>
+      <p>Walking through what happens technically when a user sends a message like <em>"Need somewhere calm for 4 people
+          tonight."</em></p>
+
+      <ol>
+        <li><strong>Send.</strong> The user types in the Next.js chat surface. The frontend opens or reuses a WebSocket
+          connection and sends the message to the NestJS API.</li>
+        <li><strong>Persist.</strong> The API records the message against the user's conversation thread in Postgres.
+        </li>
+        <li><strong>Intent extraction.</strong> The orchestrator extracts structured intent: occasion (casual dinner),
+          group size (4), ambience (calm), time (tonight), location (user's current city), any constraints.</li>
+        <li><strong>Memory lookup.</strong> The behavioral memory layer returns relevant context: this user's preferred
+          ambience, typical group size, prior declines, recurring companions, dietary constraints.</li>
+        <li><strong>Candidate retrieval.</strong> The recommendation engine pulls candidate experiences from the curated
+          supply database using hard filters first (city, availability, party size, constraints).</li>
+        <li><strong>Ranking.</strong> Candidates are re-ranked using behavioral signals, semantic similarity against
+          past preferences (via pgvector), and supply quality scores.</li>
+        <li><strong>LLM response.</strong> The orchestrator hands the top 2-3 candidates plus their key signals to the
+          LLM with a tightly scoped prompt. The LLM produces a short, warm response that names each candidate, explains
+          why it fits, and offers a next step.</li>
+        <li><strong>Stream.</strong> The response streams back over the WebSocket to the chat surface.</li>
+        <li><strong>Capture signals.</strong> Any new context (preferences, constraints, declines) is written back to
+          memory as structured fields or as a new memory event for later embedding.</li>
+      </ol>
+
+      <figure class="diagram">
+        <pre class="mermaid">
+sequenceDiagram
+    participant U as User App
+    participant API as NestJS API
+    participant Orc as Concierge Orchestrator
+    participant Mem as Behavioral Memory
+    participant Rec as Recommendation Engine
+    participant DB as Curated Supply DB
+    participant LLM as LLM Provider
+
+    U->>API: Send message
+    API->>Orc: Route to orchestrator
+    Orc->>Orc: Extract intent
+    Orc->>Mem: Fetch user / group context
+    Mem-->>Orc: Preferences, history
+    Orc->>Rec: Request candidates
+    Rec->>DB: Filter approved supply
+    DB-->>Rec: Candidate set
+    Rec-->>Orc: Top 2-3 ranked candidates
+    Orc->>LLM: Generate grounded response
+    LLM-->>Orc: Response text
+    Orc-->>API: Stream response
+    API-->>U: Stream to chat
+    Orc->>Mem: Persist new signals
+      </pre>
+        <figcaption>Diagram 2 &middot; Concierge Recommendation Flow</figcaption>
+      </figure>
+    </section>
+
+    <section id="s5">
+      <h2 class="section-break"><span class="num">Section 5</span>Behavioral Memory Architecture</h2>
+      <p>The behavioral memory layer is what lets Momenta feel like it remembers you. It has two parts.</p>
+
+      <h3>Structured Memory</h3>
+      <p>Stored in PostgreSQL as normal relational data. This is the reliable, filterable, queryable part.</p>
+      <p>Examples of what lives here:</p>
+      <ul>
+        <li>Preferred ambience (intimate, lively, outdoors, lounge, etc.)</li>
+        <li>Typical group size and composition</li>
+        <li>Budget comfort range, inferred from actual bookings</li>
+        <li>Dietary constraints and accessibility needs</li>
+        <li>Preferred neighborhoods or trip patterns</li>
+        <li>Recurring companions and how preferences shift with them</li>
+        <li>Categories or descriptors the user has declined</li>
+        <li>Booking frequency and weekday/weekend tendencies</li>
+      </ul>
+      <p>Structured memory is fast to query, easy to debug, and trivial for the recommendation engine to filter on.</p>
+
+      <h3>Semantic Memory</h3>
+      <p>Stored as embeddings in <code>pgvector</code>, inside the same Postgres instance. This is the nuanced, fuzzy
+        part.</p>
+      <p>Examples of what gets embedded:</p>
+      <ul>
+        <li>Conversation summaries</li>
+        <li>Past booking context and notes</li>
+        <li>Free-text preference statements ("we like places where you can actually hear each other")</li>
+        <li>Post-experience feedback ("too loud", "loved the back room", "not really our vibe")</li>
+      </ul>
+      <p>Semantic memory captures the things that do not fit cleanly into a structured field. When the user says
+        something like <em>"somewhere good for catching up"</em>, the system can find the cluster of past experiences
+        they reacted positively to in that mode, even if no single field describes it.</p>
+      <p>The two layers work together. Structured memory handles the hard filters and known preferences. Semantic memory
+        handles tone, nuance, and pattern matching.</p>
+
+      <h3>Sample entities</h3>
+      <p>A simplified view of the relevant tables:</p>
+      <dl class="entity-list">
+        <dt>users</dt>
+        <dd>id, name, city, signup date, basic profile.</dd>
+        <dt>user_preferences</dt>
+        <dd>user_id, ambience_tags, group_size_default, budget_band, dietary, declined_tags.</dd>
+        <dt>groups</dt>
+        <dd>id, name, organizer_user_id.</dd>
+        <dt>group_members</dt>
+        <dd>group_id, user_id, role.</dd>
+        <dt>group_preferences</dt>
+        <dd>group_id, shared_constraints, shared_tags.</dd>
+        <dt>conversations</dt>
+        <dd>id, user_id, started_at, last_message_at.</dd>
+        <dt>conversation_messages</dt>
+        <dd>id, conversation_id, sender, content, intent_json, created_at.</dd>
+        <dt>memory_events</dt>
+        <dd>id, user_id, type (preference / decline / feedback), source_message_id, summary, created_at.</dd>
+        <dt>bookings</dt>
+        <dd>id, user_id, group_id, experience_id, party_size, date, status.</dd>
+        <dt>feedback</dt>
+        <dd>id, booking_id, rating, comment, created_at.</dd>
+        <dt>embeddings</dt>
+        <dd>id, owner_type (user / group / experience / memory_event), owner_id, vector, model_version.</dd>
+      </dl>
+
+      <p>The model below shows the main sources behavioral memory can come from: direct user signals, group-level
+        signals, and the memory events that get stored for later retrieval.</p>
+
+      <figure class="diagram">
+        <pre class="mermaid">
+flowchart LR
+    subgraph UserSrc["User Memory Sources"]
+        direction TB
+        User["User"]
+        UserPref["User Preferences"]
+        Conv["Conversations"]
+        Msg["Messages"]
+        Book["Bookings"]
+        FB["Feedback"]
+        User --> UserPref
+        User --> Conv
+        Conv --> Msg
+        User --> Book
+        Book --> FB
+    end
+
+    subgraph GroupSrc["Group Memory Sources"]
+        direction TB
+        Group["Group"]
+        GPref["Group Preferences"]
+        GM["Group Members"]
+        GContext["Shared Group Context"]
+        Group --> GPref
+        Group --> GM
+        Group --> GContext
+    end
+
+    GM --> User
+
+    subgraph Storage["Memory Storage / Retrieval"]
+        direction TB
+        MEM["Memory Events"]
+        Emb["Embeddings / pgvector"]
+        MEM --> Emb
+    end
+
+    Msg --> MEM
+    FB --> MEM
+    GContext --> MEM
+      </pre>
+        <figcaption>Diagram 3 &middot; Behavioral Memory Model</figcaption>
+      </figure>
+    </section>
+
+    <section id="s6">
+      <h2 class="section-break"><span class="num">Section 6</span>Recommendation Engine</h2>
+      <p>The recommendation engine sits between memory and the LLM. Its job is to produce a short, high-confidence
+        shortlist that the concierge can speak about.</p>
+
+      <h3>Pipeline</h3>
+      <ol>
+        <li><strong>Extract intent.</strong> Occasion, group size, ambience, time, constraints, location.</li>
+        <li><strong>Apply hard filters.</strong> City, date/time availability, party size, dietary or accessibility
+          constraints, price range.</li>
+        <li><strong>Pull candidates.</strong> Query the curated supply database for everything that survives the
+          filters.</li>
+        <li><strong>Retrieve behavioral memory.</strong> Structured user and group preferences.</li>
+        <li><strong>Retrieve semantic matches.</strong> Use pgvector to find candidates whose descriptions or past
+          feedback patterns line up with the user's expressed intent and history.</li>
+        <li><strong>Re-rank.</strong> Apply the scoring formula below.</li>
+        <li><strong>Return top 2-3.</strong> Not 20.</li>
+        <li><strong>LLM explanation.</strong> The orchestrator hands the shortlist plus the strongest fit signals to the
+          LLM, which generates the response.</li>
+      </ol>
+
+      <h3>Scoring (conceptual)</h3>
+      <pre class="codeblock"><code>final_score =
+    supply_quality_score
+  * user_preference_fit
+  * group_fit
+  * contextual_fit
+  * feedback_confidence
+  - constraint_penalties</code></pre>
+
+      <p>This is conceptual, not final math. The point is that scoring is a composition of signals the system can
+        explain, and that hard constraints (a dietary requirement, an accessibility need, an unavailable date) act as
+        penalties or filters rather than soft suggestions.</p>
+
+      <p>A few principles the engine should hold:</p>
+      <ul>
+        <li><strong>Decision confidence over coverage.</strong> Two strong matches beat ten mediocre ones.</li>
+        <li><strong>Honesty when there is no match.</strong> If nothing scores well, the concierge says so instead of
+          force-fitting.</li>
+        <li><strong>Freshness matters.</strong> A venue the user has just been to should drop down the list unless they
+          specifically asked for it again.</li>
+        <li><strong>Feedback closes the loop.</strong> Post-experience signals update both the user's profile and the
+          venue's supply score.</li>
+      </ul>
+    </section>
+
+    <section id="s7">
+      <h2 class="section-break"><span class="num">Section 7</span>Supply Intelligence Pipeline</h2>
+      <p>This is the internal, non-user-facing side of the system. It is what keeps recommendation quality high without
+        burning out the team.</p>
+
+      <p>Human review does not happen during a user's live concierge session. The supply intelligence pipeline runs
+        asynchronously in the background, continuously discovering, enriching, and scoring potential venues or
+        experiences. Approval happens before candidates enter the approved supply database. Once approved, they become
+        available for real-time recommendation by the concierge.</p>
+
+      <h3>Pipeline</h3>
+      <ol>
+        <li><strong>Discovery.</strong> Workers crawl Instagram, TikTok, Google Maps, local blogs, creator posts, and
+          partner leads. Each candidate enters the system as a draft <code>SupplyCandidate</code>.</li>
+        <li><strong>Enrichment.</strong> Workers pull photos, descriptions, tags, reviews, social signals, price band,
+          location, opening hours, and any operational details available.</li>
+        <li><strong>AI Classification.</strong> An AI step labels each candidate on ambience, uniqueness, group fit,
+          aesthetic quality, and trust indicators. Each label is stored alongside the signals that produced it.</li>
+        <li><strong>Scoring.</strong> A Momenta Fit Score is computed from the classified signals.</li>
+        <li><strong>Review and approval.</strong> Each candidate passes through one of three approval paths (human
+          review, AI-assisted fast-track, or AI auto-approval) depending on signal confidence and risk. See
+          <em>Approval Modes</em> below.
+        </li>
+        <li><strong>Approved Supply Database.</strong> Approved candidates move into the curated supply database and
+          become visible to the recommendation engine. Every approval stores the mode used, confidence level, signals
+          referenced, model version, reviewer (human or AI), and any human override.</li>
+        <li><strong>Feedback Loop.</strong> Booking outcomes and post-experience signals update the supply score over
+          time. Venues that consistently underperform lose ranking weight.</li>
+      </ol>
+
+      <figure class="diagram">
+        <pre class="mermaid">
+flowchart LR
+    Ext["External Sources"] --> Disc["Discovery Worker"]
+    Disc --> Enr["Enrichment Worker"]
+    Enr --> Score["AI Classification + Scoring"]
+    Score --> Review["Review &amp; Approval<br/>(human / AI-assisted / auto)"]
+    Review --> Approved[("Approved Supply DB")]
+    Approved --> Rec["Recommendation Engine"]
+    Rec --> Outcomes["Booking Outcomes + Feedback"]
+    Outcomes --> Score
+      </pre>
+        <figcaption>Diagram 4 &middot; Supply Intelligence Pipeline</figcaption>
+      </figure>
+
+      <h3>Approval Modes</h3>
+      <p>Approval is not a single step. It is a configurable workflow with three modes, applied based on candidate
+        signals and risk profile.</p>
+      <ul>
+        <li><strong>1. Human Review Required.</strong> The default quality gate, especially early on. Used for new host
+          categories, premium or high-risk experiences, ambiguous quality signals, low-confidence AI scoring, safety- or
+          brand-sensitive experiences, and first-time providers.</li>
+        <li><strong>2. AI-Assisted / Fast-Track Approval.</strong> Used when signals are strong but still worth a quick
+          human pass. Strong candidate signals, consistent positive reviews, clear fit with Momenta's rules, strong
+          visual quality, and reliable metadata. AI prepares the recommendation; humans batch-confirm rather than
+          reviewing from scratch.</li>
+        <li><strong>3. AI Auto-Approval.</strong> Used later, once the system has a track record. Reserved for very
+          high-confidence candidates, repeat hosts, existing partners adding new experiences, low-risk categories, and
+          candidates that match patterns of historically successful supply.</li>
+      </ul>
+      <p>The point is that AI handles more of the approval burden over time while humans stay focused on edge cases,
+        brand-sensitive decisions, and quality control. Auto-approved candidates are still auditable, and periodic human
+        audits should sample them to protect quality.</p>
+
+      <p>A few engineering rules around this:</p>
+      <ul>
+        <li><strong>Asynchronous.</strong> Approval runs in the background. The user-facing concierge never waits for
+          it.</li>
+        <li><strong>Explainable.</strong> Every AI approval decision must point to the signals and thresholds that
+          produced it.</li>
+        <li><strong>Configurable rules.</strong> Approval thresholds, mode routing, and category-specific overrides are
+          stored as configuration, not hard-coded.</li>
+        <li><strong>Auditable.</strong> Every decision is logged with mode, confidence, signals used, model version,
+          timestamp, reviewer, and override status.</li>
+        <li><strong>Reversible.</strong> A human can override or revoke any AI approval at any time, and the override is
+          recorded against the candidate.</li>
+      </ul>
+
+      <h3>Why BullMQ and Redis matter here</h3>
+      <p>The supply pipeline is naturally asynchronous and bursty. BullMQ on top of Redis is the right tool for this:
+      </p>
+      <ul>
+        <li><strong>Background jobs.</strong> Discovery, enrichment, scoring, and embedding generation all run off the
+          user-facing request path.</li>
+        <li><strong>Retries.</strong> Scrapes fail. Job retries with backoff are built in.</li>
+        <li><strong>Scheduled runs.</strong> Recurring discovery on a daily or weekly cadence is straightforward.</li>
+        <li><strong>Backpressure.</strong> The user-facing app stays responsive even when the pipeline is processing
+          thousands of candidates.</li>
+      </ul>
+      <p>The existing stack already includes BullMQ, so this is a natural extension rather than new infrastructure.</p>
+    </section>
+
+    <section id="s8">
+      <h2 class="section-break"><span class="num">Section 8</span>Data Model Overview</h2>
+      <p>A practical, simplified view of the major entities. Field lists are illustrative, not exhaustive.</p>
+
+      <dl class="entity-list">
+        <dt>User</dt>
+        <dd>id, email/phone, name, city, created_at. Core identity.</dd>
+        <dt>Group</dt>
+        <dd>id, name, organizer_id, created_at. A reusable set of people who plan together.</dd>
+        <dt>GroupMember</dt>
+        <dd>group_id, user_id, role.</dd>
+        <dt>UserPreference</dt>
+        <dd>user_id, ambience_tags, group_size_default, budget_band, dietary, declined_tags, last_updated.</dd>
+        <dt>GroupPreference</dt>
+        <dd>group_id, shared_constraints, shared_tags.</dd>
+        <dt>Experience</dt>
+        <dd>id, host_id, name, category, neighborhood, price_band, capacity, description, tags, status. The actual
+          recommendable thing.</dd>
+        <dt>Host</dt>
+        <dd>id, name, contact, status, responsiveness_score.</dd>
+        <dt>Booking</dt>
+        <dd>id, user_id, group_id, experience_id, party_size, date, status, source.</dd>
+        <dt>Conversation</dt>
+        <dd>id, user_id, started_at, last_message_at, intent_summary.</dd>
+        <dt>Message</dt>
+        <dd>id, conversation_id, sender (user / concierge), content, intent_json, created_at.</dd>
+        <dt>MemoryEvent</dt>
+        <dd>id, user_id, type (preference, decline, feedback, observation), source_ref, summary, created_at.</dd>
+        <dt>SupplyCandidate</dt>
+        <dd>id, source (instagram, tiktok, maps, etc.), source_ref, raw_payload, status (draft, enriched, scored,
+          approved, rejected).</dd>
+        <dt>SupplyScore</dt>
+        <dd>candidate_id or experience_id, dimension (ambience, uniqueness, group_fit, etc.), score, signals_json,
+          model_version.</dd>
+        <dt>ReviewDecision</dt>
+        <dd>candidate_id, decision, approval_mode (human / ai_assisted / ai_auto), approval_confidence,
+          approved_by_type (human / ai / hybrid), reviewer_id (nullable for ai_auto), approval_reason, signals_used,
+          model_version, override_status, decided_at.</dd>
+        <dt>EmbeddingRecord</dt>
+        <dd>id, owner_type, owner_id, vector, model_version, created_at.</dd>
+        <dt>Feedback</dt>
+        <dd>booking_id, rating, comment, created_at.</dd>
+      </dl>
+
+      <p>This shape covers Phase 1 and Phase 2 without needing to redesign for Phase 3.</p>
+    </section>
+
+    <section id="s9">
+      <h2 class="section-break"><span class="num">Section 9</span>AI Orchestration Layer</h2>
+      <p>The orchestrator is a small service inside the NestJS backend. It is the place where intent, memory, retrieval,
+        and the LLM get composed into a single response.</p>
+
+      <h3>Responsibilities</h3>
+      <ul>
+        <li>Route incoming user messages to the right handler.</li>
+        <li>Extract intent from each message and update conversation state.</li>
+        <li>Decide when the system has enough context to recommend, and when one short clarifying question is needed.
+        </li>
+        <li>Fetch the relevant slice of behavioral memory.</li>
+        <li>Call the recommendation engine and receive the shortlist.</li>
+        <li>Build the LLM prompt with grounded context: the shortlist, the relevant memory, the conversation so far.
+        </li>
+        <li>Enforce grounding rules before returning anything to the user.</li>
+        <li>Stream the response back through WebSockets.</li>
+        <li>Log signals from the exchange back into memory.</li>
+      </ul>
+
+      <h3>Guardrails</h3>
+      <ul>
+        <li><strong>No unsupported venue claims.</strong> The LLM is given a fixed set of candidates and may not
+          reference any other venue by name.</li>
+        <li><strong>No invented availability.</strong> Availability statements come from structured data, not the LLM.
+        </li>
+        <li><strong>Use internal signals for the "why".</strong> Explanations are grounded in scored signals (ambience,
+          group fit, uniqueness) rather than improvised text.</li>
+        <li><strong>Graceful fallback.</strong> When confidence is low, the concierge says <em>"I don't have a great
+            match for that this weekend, want me to look at next week or something else?"</em> rather than padding the
+          response.</li>
+        <li><strong>Human handoff.</strong> Edge cases (large groups, sensitive occasions, partner-only experiences) can
+          route to a human concierge instead of forcing the AI to handle them.</li>
+      </ul>
+
+      <div class="callout">This is the difference between "an LLM in the product" and "an LLM as the product." The LLM
+        is one component among several. It does not get to override the curation layer.</div>
+    </section>
+
+    <section id="s10">
+      <h2 class="section-break"><span class="num">Section 10</span>Software System Fit With Existing Stack</h2>
+      <p>The architecture lines up cleanly with what is already in place.</p>
+      <ul>
+        <li><strong>Next.js.</strong> User-facing concierge UI, recommendation cards, booking flow, and the internal
+          review dashboard. One framework, two surfaces (consumer and internal).</li>
+        <li><strong>NestJS.</strong> REST and WebSocket API, auth and session, concierge orchestration endpoints,
+          recommendation and supply intelligence services. The orchestrator lives here as a module.</li>
+        <li><strong>PostgreSQL.</strong> Core relational data: users, groups, bookings, supply, conversations, memory,
+          scoring, decisions. Single source of truth.</li>
+        <li><strong>pgvector.</strong> Inside the same Postgres instance. Semantic memory, similarity search over user
+          and group context, supply description matching. Avoids the overhead of a separate vector database.</li>
+        <li><strong>Redis + BullMQ.</strong> Async jobs: supply scraping, enrichment, embedding generation, scoring,
+          memory summarization, scheduled discovery runs.</li>
+        <li><strong>Meilisearch.</strong> Fast keyword search over supply and internal lookups. Useful both for the
+          curation team and for any user-facing browse surfaces later.</li>
+        <li><strong>WebSockets.</strong> Streaming concierge responses, live conversation experience, and shared group
+          planning threads when those arrive.</li>
+        <li><strong>Sentry / BetterStack.</strong> Error tracking, uptime, queue health, LLM call visibility. Critical
+          when an AI system is in the path.</li>
+        <li><strong>Docker.</strong> Local development, predictable deploys, easy worker scaling.</li>
+        <li><strong>Cloudflare.</strong> CDN and edge protection for the consumer surface.</li>
+      </ul>
+      <p>The point is that nothing in the architecture requires a new infrastructure category. pgvector and additional
+        BullMQ workers extend what is already there.</p>
+    </section>
+
+    <section id="s11">
+      <h2 class="section-break"><span class="num">Section 11</span>MVP Technical Scope</h2>
+      <p>Sequenced, not dated.</p>
+
+      <div class="phases">
+        <div class="phase">
+          <h4>Phase 1</h4>
+          <ul>
+            <li>Chat UI in the Next.js app.</li>
+            <li>Concierge endpoint and WebSocket gateway in NestJS.</li>
+            <li>Basic intent extraction.</li>
+            <li>Basic recommendation engine that retrieves from a manually-populated curated supply table.</li>
+            <li>Basic ranking using hard filters and supply quality.</li>
+            <li>Conversation persistence.</li>
+            <li>Lightweight post-experience feedback capture.</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <h4>Phase 2</h4>
+          <ul>
+            <li>Structured behavioral memory tables and update logic.</li>
+            <li>pgvector enabled. Embeddings generated for conversation summaries, memory events, and experience
+              descriptions.</li>
+            <li>Memory-aware recommendation re-ranking.</li>
+            <li>Post-experience feedback loop wired into both user profile and supply score.</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <h4>Phase 3</h4>
+          <ul>
+            <li>Supply intelligence workers: discovery, enrichment, AI classification, scoring.</li>
+            <li>Human review dashboard inside the same Next.js app.</li>
+            <li>Feedback loop from bookings into supply scores.</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <h4>Phase 4</h4>
+          <ul>
+            <li>Group profiles and group preferences.</li>
+            <li>Shared concierge threads for group planning.</li>
+            <li>Deeper personalization across recurring groups.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="s12">
+      <h2 class="section-break"><span class="num">Section 12</span>Risks and Design Decisions</h2>
+      <table class="risks">
+        <thead>
+          <tr>
+            <th>Risk</th>
+            <th>Mitigation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AI hallucination</td>
+            <td>The LLM only ever speaks about candidates the system already approved. Grounding is enforced at the
+              orchestrator level.</td>
+          </tr>
+          <tr>
+            <td>Generic AI tone</td>
+            <td>Treat the concierge's voice as a product surface. Prompt design and tone testing are first-class work,
+              not a side task.</td>
+          </tr>
+          <tr>
+            <td>Poor supply quality</td>
+            <td>Human review on top of AI scoring. The curation team is the final gate, with AI-assisted and
+              auto-approval modes introduced gradually as confidence is earned.</td>
+          </tr>
+          <tr>
+            <td>Over-automation of curation</td>
+            <td>Approval is phased across three modes (human, AI-assisted, AI auto), gated by category, risk, and
+              confidence thresholds. Auto-approved candidates remain auditable, and humans can override at any time.
+            </td>
+          </tr>
+          <tr>
+            <td>Live approval bottleneck</td>
+            <td>Supply intelligence runs asynchronously. The user-facing concierge only ever recommends from
+              already-approved supply, so it never waits on a reviewer.</td>
+          </tr>
+          <tr>
+            <td>Opaque AI decisions</td>
+            <td>Every approval stores the signals, confidence, model version, and approval mode that produced it.
+              Periodic human audits sample auto-approved candidates to protect quality.</td>
+          </tr>
+          <tr>
+            <td>Privacy and social data concerns</td>
+            <td>Group and companion data is opt-in. Store the minimum needed for useful recommendations.</td>
+          </tr>
+          <tr>
+            <td>Onboarding friction</td>
+            <td>Short onboarding plus learning-by-observation. Memory builds from behavior, not surveys.</td>
+          </tr>
+          <tr>
+            <td>Weak feedback loops</td>
+            <td>Post-experience feedback is one tap plus an optional sentence, wired into both user memory and supply
+              scoring.</td>
+          </tr>
+          <tr>
+            <td>One person owning too many disciplines</td>
+            <td>Clear ownership across AI/backend, frontend/mobile, and UX/UI, as covered in the proposal's team
+              structure section.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s13">
+      <h2 class="section-break"><span class="num">Section 13</span>Architecture Diagrams Summary</h2>
+      <p>For quick reference, the diagrams included in this addendum:</p>
+      <ol>
+        <li><strong>High-Level Momenta AI Architecture</strong> (Section 2)</li>
+        <li><strong>Concierge Recommendation Flow</strong> (Section 4)</li>
+        <li><strong>Behavioral Memory Model</strong> (Section 5)</li>
+        <li><strong>Supply Intelligence Pipeline</strong> (Section 7)</li>
+      </ol>
+      <p>Four diagrams is intentional. More would crowd the document without adding clarity.</p>
+    </section>
+
+    <section id="s14">
+      <h2 class="section-break"><span class="num">Section 14</span>Closing</h2>
+      <p>The architecture can start simple. The existing stack is a strong foundation, and the pieces that need to be
+        added (pgvector, additional BullMQ workers, the orchestrator module) extend what is already there rather than
+        replacing it.</p>
+      <p>The principle that ties everything together is grounding. The AI stays useful because it stays inside Momenta's
+        curated supply and behavioral memory. The curation layer keeps brand trust intact. The feedback loops make both
+        layers sharper over time.</p>
+      <p>If those three things hold (grounded AI, curated supply, working feedback loops), the rest is engineering work
+        that can be sequenced sensibly without overbuilding.</p>
+    </section>
+
+    <div class="colophon">Momenta &middot; Engineering Architecture Addendum &middot; Prepared by Henry Giwa</div>
+  </main>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      fontFamily: "Inter, sans-serif",
+      themeVariables: {
+        background: "#fdfaf3",
+        primaryColor: "#fdfaf3",
+        primaryTextColor: "#2a2522",
+        primaryBorderColor: "#a76353",
+        secondaryColor: "#f3ece0",
+        tertiaryColor: "#faf6ef",
+        lineColor: "#7a3a2c",
+        textColor: "#2a2522",
+        mainBkg: "#fdfaf3",
+        nodeBorder: "#a76353",
+        clusterBkg: "#f3ece0",
+        clusterBorder: "#d2c9b8",
+        edgeLabelBackground: "#fdfaf3",
+        actorBkg: "#fdfaf3",
+        actorBorder: "#a76353",
+        actorTextColor: "#2a2522",
+        actorLineColor: "#a76353",
+        signalColor: "#7a3a2c",
+        signalTextColor: "#2a2522",
+        labelBoxBkgColor: "#f3ece0",
+        labelBoxBorderColor: "#a76353",
+        labelTextColor: "#2a2522",
+        sequenceNumberColor: "#fdfaf3",
+        noteBkgColor: "#f3ece0",
+        noteBorderColor: "#a76353",
+        noteTextColor: "#2a2522"
+      }
+    });
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Momenta - Product Execution Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="momenta-proposal.css" />
+</head>
+
+<body>
+
+  <section class="cover">
+    <div class="eyebrow">Momenta &middot; Product &amp; AI Systems</div>
+    <h1>Product Execution Companion</h1>
+    <p class="subtitle">AI Concierge, Supply Intelligence, and MVP Build Direction</p>
+
+    <dl class="meta">
+      <dt>Prepared for</dt>
+      <dd>Juliana Marulanda, CEO, Momenta</dd>
+      <dt>Prepared by</dt>
+      <dd>Henry Giwa</dd>
+      <dt>Subject</dt>
+      <dd>Execution direction, product flows, and MVP structure</dd>
+      <dt>Date</dt>
+      <dd>May 2026</dd>
+    </dl>
+
+    <nav class="toc" aria-label="Table of contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#s1">Introduction</a></li>
+        <li><a href="#s2">Product Experience Vision</a></li>
+        <li><a href="#s3">Concierge MVP Flow</a></li>
+        <li><a href="#s4">Example AI Interactions</a></li>
+        <li><a href="#s5">Behavioral Memory Examples</a></li>
+        <li><a href="#s6">Group Dynamics and Social Context</a></li>
+        <li><a href="#s7">Supply Intelligence Operational Flow</a></li>
+        <li><a href="#s8">MVP Build Phases</a></li>
+        <li><a href="#s9">Technical Execution Notes</a></li>
+        <li><a href="#s10">A Note on the Visual Concepts</a></li>
+        <li><a href="#s11">Closing Thoughts</a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <main class="page">
+
+    <section id="s1">
+      <h2><span class="num">Section 1</span>Introduction</h2>
+      <p>The first proposal covered the why and the what: where Momenta sits, what the concierge should feel like, how
+        supply intelligence reinforces it, and how the stack evolves. This document is the companion piece. It covers
+        the how.</p>
+      <p>The goal here is to make the product tangible. What does the first user interaction actually look like. How
+        does memory show up in practice. How does a group plan something together inside the app. What gets built first,
+        what comes next, and what we can comfortably defer.</p>
+      <p>Treat this as a working execution sketch rather than a finished spec. The flows will tighten once we put the
+        first version in front of real users, but this is a useful blueprint to argue against and refine.</p>
+    </section>
+
+    <section id="s2">
+      <h2 class="section-break"><span class="num">Section 2</span>Product Experience Vision</h2>
+      <p>A few qualities the product should consistently hit:</p>
+      <ul>
+        <li><strong>Warm.</strong> The app should feel like opening a conversation, not loading a tool. The first screen
+          should never feel like work.</li>
+        <li><strong>Calm.</strong> No infinite feeds, no notification badges fighting for attention. Momenta is the
+          opposite of TikTok in mood, even if some of the supply originally comes from there.</li>
+        <li><strong>Conversational.</strong> Most of the real product happens in a chat-like surface. Buttons and cards
+          live around the conversation, not the other way around.</li>
+        <li><strong>Low friction.</strong> A user should be able to go from "I want to do something this weekend" to
+          "booked" in under a minute on a good day.</li>
+        <li><strong>Group-aware.</strong> The product never forgets that most plans involve other people. Group context
+          should be a first-class object, not an afterthought.</li>
+        <li><strong>Quietly intelligent.</strong> The system should reveal what it knows about a user through better
+          recommendations, not through dashboards or "we learned X about you" moments.</li>
+      </ul>
+      <div class="callout">The simplest test: would a thoughtful friend with great taste behave this way? If yes, ship
+        it. If not, rework it.</div>
+    </section>
+
+    <section id="s3">
+      <h2 class="section-break"><span class="num">Section 3</span>Concierge MVP Flow</h2>
+      <p>Walking through what the first end-to-end experience could look like.</p>
+
+      <h4 class="step-title">Step 1 &middot; Onboarding (under 60 seconds)</h4>
+      <ul>
+        <li>User signs up with phone or email.</li>
+        <li>One screen asking: city, a couple of basic preferences (vibe-leaning sliders or quick taps, not a long
+          form), and whether they usually go out solo, as a couple, or with a group.</li>
+        <li>That is it. No 12-question personality quiz. The system will learn the rest by watching.</li>
+      </ul>
+
+      <h4 class="step-title">Step 2 &middot; First Interaction</h4>
+      <ul>
+        <li>User lands on the concierge screen. A short greeting, then one lightweight prompt: <em>"What are you
+            thinking about? A dinner, something this weekend, a place to take someone?"</em></li>
+        <li>The user types or taps a suggested chip ("dinner tonight", "weekend plans", "spot for a friend visiting").
+        </li>
+      </ul>
+
+      <figure class="mockup-mobile">
+        <img src="./mockups/concierge-home.png" alt="Concierge home screen mockup" />
+        <figcaption>Concept mockup: A mobile-first entry point where users can describe the kind of moment they are
+          looking for in a natural, low-friction way.</figcaption>
+      </figure>
+
+      <h4 class="step-title">Step 3 &middot; Contextual Questioning</h4>
+      <ul>
+        <li>The concierge asks at most one or two short follow-ups to narrow the recommendation. Examples:
+          <ul>
+            <li>How many of you?</li>
+            <li>Calm or lively?</li>
+            <li>Any vibe you are leaning toward?</li>
+          </ul>
+        </li>
+        <li>It should feel like a friend texting back, not a form unfolding.</li>
+      </ul>
+
+      <h4 class="step-title">Step 4 &middot; Recommendation Generation</h4>
+      <ul>
+        <li>The concierge returns two or three curated options pulled from the approved supply database through the
+          recommendation layer.</li>
+        <li>Each option includes: a photo or two, a one-line "why this fits", practical details (price band,
+          neighborhood, group friendliness), and a primary action (book / hold / save).</li>
+        <li>No infinite scroll. If none feel right, the user can say so and the concierge adjusts.</li>
+      </ul>
+
+      <figure class="mockup-mobile">
+        <img src="./mockups/curated-recommendations.png" alt="Curated recommendations screen mockup" />
+        <figcaption>Concept mockup: Fewer, more intentional recommendations with context, ambience tags, group fit,
+          availability, and a clear booking action.</figcaption>
+      </figure>
+
+      <h4 class="step-title">Step 5 &middot; Booking</h4>
+      <ul>
+        <li>Booking happens inside the conversation. Date, time, party size, any notes, confirm.</li>
+        <li>For supply that is not directly bookable yet, the concierge can hand off through WhatsApp or a confirm flow,
+          matching how Momenta already operates.</li>
+      </ul>
+
+      <h4 class="step-title">Step 6 &middot; Feedback Loop</h4>
+      <ul>
+        <li>After the experience, a single lightweight prompt: a thumbs up/down and one optional sentence.</li>
+        <li>That signal feeds two things: the user's behavioral profile and the supply scoring system.</li>
+      </ul>
+
+      <p>The whole loop should feel light. The user should never feel like they are "training" the system.</p>
+    </section>
+
+    <section id="s4">
+      <h2 class="section-break"><span class="num">Section 4</span>Example AI Interactions</h2>
+      <p>Sample concierge exchanges. Tone is warm, lightly opinionated, short.</p>
+
+      <figure class="mockup-mobile">
+        <img src="./mockups/conversational-concierge.png" alt="Conversational concierge mockup" />
+        <figcaption>Concept mockup: A conversational flow where the AI asks a lightweight clarifying question and
+          returns curated recommendations without overwhelming the user.</figcaption>
+      </figure>
+
+      <p><em>The examples below use real-world-style venue references to make the flows concrete. In production, the
+          concierge would only recommend experiences from Momenta's approved supply layer.</em></p>
+
+      <p class="example-title">Example 1 &middot; Date night in Bogota</p>
+      <div class="dialogue">
+        <p><strong>User:</strong> date night idea for tomorrow, something calm</p>
+        <p><strong>Concierge:</strong> Got it. Just the two of you?</p>
+        <p><strong>User:</strong> yeah</p>
+        <p><strong>Concierge:</strong> Two directions I'd lean toward:</p>
+        <ul>
+          <li><strong>Mesa Franca</strong> in Chapinero. Low lighting, small plates, the kind of place where you can
+            actually hear each other.</li>
+          <li><strong>El Chato</strong> if you want something a little more elevated. Slower pace, intentional menu,
+            good for a real conversation.</li>
+        </ul>
+        <p>Want me to lock something in?</p>
+      </div>
+
+      <p class="example-title">Example 2 &middot; Friend visiting from out of town (New York)</p>
+      <div class="dialogue">
+        <p><strong>User:</strong> my friend Mateo is in town Saturday, want to take him somewhere</p>
+        <p><strong>Concierge:</strong> Nice. How many of you total, and is he more the laid-back-dinner type or up for a
+          bigger night?</p>
+        <p><strong>User:</strong> four of us, more laid back</p>
+        <p><strong>Concierge:</strong> Try <strong>Via Carota</strong> for an early dinner, then drinks at
+          <strong>Dante</strong> a few blocks over. Walkable, both feel like the city without trying too hard.
+        </p>
+      </div>
+
+      <p class="example-title">Example 3 &middot; Group dinner in London</p>
+      <div class="dialogue">
+        <p><strong>User:</strong> dinner for 6 friday, one vegetarian one no spice</p>
+        <p><strong>Concierge:</strong> That narrows it usefully. <strong>Dishoom</strong> handles both well, their menu
+          actually has range instead of one sad side dish. Ask for a quieter table near the back if you want to actually
+          talk.</p>
+      </div>
+
+      <p class="example-title">Example 4 &middot; Quiet workspace cafe (Mexico City)</p>
+      <div class="dialogue">
+        <p><strong>User:</strong> somewhere to work for a few hours tomorrow, good coffee</p>
+        <p><strong>Concierge:</strong> <strong>Cafe Avellaneda</strong> in Coyoacan is the safe pick if you want quiet
+          and good coffee. If you want something a little more design-forward and easy to linger in,
+          <strong>Buna</strong> in Roma is a solid call in the mornings.
+        </p>
+      </div>
+
+      <p class="example-title">Example 5 &middot; Birthday planning in Paris</p>
+      <div class="dialogue">
+        <p><strong>User:</strong> planning my birthday end of next month, group of 10ish, want something memorable</p>
+        <p><strong>Concierge:</strong> Fun. A few directions before I narrow: dinner-and-then-out, a private space for
+          the whole night, or an experience-style thing like a tasting?</p>
+        <p><strong>User:</strong> private space, dinner into drinks</p>
+        <p><strong>Concierge:</strong> Two strong directions. <strong>Septime</strong> style places tend to handle small
+          groups well if you want food at the center. Or somewhere like <strong>Clown Bar</strong>, looser, more
+          characterful, easier to flow from dinner into drinks without changing rooms. Want me to check what's actually
+          available for that week?</p>
+      </div>
+
+      <p>Across all of these, the concierge stays short, picks a direction, and explains the why in one sentence. No
+        essays.</p>
+    </section>
+
+    <section id="s5">
+      <h2 class="section-break"><span class="num">Section 5</span>Behavioral Memory Examples</h2>
+      <p>How memory actually shows up over time. The point is that recommendations get sharper without the user ever
+        filling out a preference page.</p>
+
+      <figure class="mockup-mobile">
+        <img src="./mockups/behavioral-memory.png" alt="Behavioral memory profile mockup" />
+        <figcaption>Concept mockup: A simple view of how Momenta could gradually learn a user's taste, preferences, and
+          planning patterns over time.</figcaption>
+      </figure>
+
+      <h4>After 3 bookings</h4>
+      <ul>
+        <li>System notices the user keeps choosing calmer spots and declining anything described as "lively" or
+          "club-adjacent".</li>
+        <li>Next time they ask for somewhere new, the concierge skips the loud places by default and only surfaces them
+          if the user asks for something different.</li>
+      </ul>
+
+      <h4>After 6 bookings</h4>
+      <ul>
+        <li>System notices Friday bookings tend to be group dinners of 4-6, Saturday bookings tend to be couple-only.
+        </li>
+        <li>When they say "something for tomorrow" on a Thursday, the concierge can reasonably guess group size and ask
+          one short confirming question instead of three.</li>
+      </ul>
+
+      <h4>After a declined recommendation</h4>
+      <ul>
+        <li>User passes on a place and says "too far". System tags that location/area combination, weights nearby
+          options higher next time.</li>
+        <li>User passes on a place and says "not really our vibe". System looks at what categories or descriptors that
+          venue had and softens those for this user going forward.</li>
+      </ul>
+
+      <h4>Recurring companions</h4>
+      <ul>
+        <li>The user keeps booking with the same two friends. Over time the system can recognize this as a recurring
+          group and recall their shared preferences (one vegetarian, one likes outdoor seating) without the user
+          repeating it.</li>
+      </ul>
+
+      <h4>Weekday vs weekend pattern</h4>
+      <ul>
+        <li>User books quiet cafes on weekdays and louder dinners on weekends. The same prompt ("somewhere to eat
+          tonight") gets interpreted differently depending on the day.</li>
+      </ul>
+
+      <p>None of this requires explicit user action. It comes out of bookings, conversational signals, and the
+        lightweight post-experience feedback.</p>
+    </section>
+
+    <section id="s6">
+      <h2 class="section-break"><span class="num">Section 6</span>Group Dynamics and Social Context</h2>
+      <p>Most of the AI recommendation literature assumes a single user. Momenta does not have that luxury. Some
+        practical principles:</p>
+      <ul>
+        <li><strong>Group is a first-class object.</strong> A recurring group of friends (or a couple) gets its own
+          preference profile, distinct from the individual profiles inside it. This lets the system reason about "you
+          and Mateo and Sofia" rather than averaging three separate users.</li>
+        <li><strong>Overlap before compromise.</strong> When recommending for a group, the system looks for venues that
+          genuinely satisfy everyone's constraints first (dietary, accessibility, price comfort) before optimizing for
+          shared preference signals.</li>
+        <li><strong>Soft compromise is better than rigid optimization.</strong> If two members lean quiet and one leans
+          lively, the concierge can suggest a quieter place with energy ("calm dining room but the bar gets fun later")
+          rather than forcing a tradeoff.</li>
+        <li><strong>Group planning can be conversational.</strong> Eventually, a shared concierge thread that multiple
+          group members can drop into ("we are picking somewhere for Saturday, what do you all think") becomes a natural
+          product surface. Not for MVP, but the model should leave room for it.</li>
+        <li><strong>Default to the organizer's context.</strong> The person initiating the booking carries the most
+          context. The system can lean on their profile while still respecting known group constraints.</li>
+      </ul>
+      <p>Group recommendation is harder than individual recommendation, but it is also where Momenta's product is
+        genuinely different from anything else.</p>
+    </section>
+
+    <section id="s7">
+      <h2 class="section-break"><span class="num">Section 7</span>Supply Intelligence Operational Flow</h2>
+      <p>The internal pipeline that feeds the concierge. None of this is user-facing, but it is what keeps
+        recommendation quality high without burning out the team on manual scouting.</p>
+
+      <p>One thing worth being explicit about: supply intelligence runs in the background, not during a user's chat.
+        Discovery, enrichment, scoring, and approval all happen asynchronously. By the time a user is talking to the
+        concierge, the system is only ever drawing from supply that has already been approved. Approval is never a live
+        step in a conversation.</p>
+
+      <figure class="mockup-wide">
+        <img src="./mockups/supply-intelligence-queue.png" alt="Supply intelligence curation queue mockup" />
+        <figcaption>Concept mockup: An internal curation queue where AI surfaces potential venues, scores fit, and
+          supports human review before adding supply to Momenta.</figcaption>
+      </figure>
+
+      <h4>1. Discovery</h4>
+      <ul>
+        <li>Crawlers and watchlists pull candidate venues and experiences from Instagram, TikTok, Google Maps, local
+          press, and tip submissions.</li>
+        <li>Each candidate enters the system as a draft entity with whatever signals were available at discovery.</li>
+      </ul>
+
+      <h4>2. Enrichment</h4>
+      <ul>
+        <li>A background pipeline pulls in photos, menus, opening hours, neighborhood, price band, and any social proof
+          (mentions, follower velocity, review sentiment).</li>
+        <li>AI assists by summarizing review patterns, tagging vibe descriptors, and flagging inconsistencies
+          (advertised hours versus actual reviews).</li>
+      </ul>
+
+      <h4>3. Scoring</h4>
+      <ul>
+        <li>Each candidate gets scored on dimensions that map to Momenta's brand: aesthetic quality, consistency, group
+          friendliness, host responsiveness, uniqueness, price-to-experience ratio.</li>
+        <li>Scores are explainable. Each one points back to the signals that drove it.</li>
+      </ul>
+
+      <h4>4. Review and Approval</h4>
+      <p>Approval can run in three modes, applied based on the candidate's signals and risk profile:</p>
+      <ul>
+        <li><strong>Human Review Required.</strong> The default in the early MVP. Used for new host categories, premium
+          or high-risk experiences, ambiguous quality signals, low-confidence AI scoring, safety- or brand-sensitive
+          experiences, and first-time providers. The team sees a ranked queue with everything pre-summarized, so
+          reviewing a venue takes minutes instead of an afternoon.</li>
+        <li><strong>AI-Assisted / Fast-Track Approval.</strong> Introduced once the system has enough track record. AI
+          prepares the recommendation when signals are strong (consistent positive reviews, clear fit with Momenta's
+          rules, strong visual quality, reliable metadata). Humans batch-confirm rather than reviewing from scratch.
+        </li>
+        <li><strong>AI Auto-Approval.</strong> Used later for very high-confidence, low-risk candidates: repeat hosts,
+          existing partners adding new experiences, low-risk categories, candidates that match patterns of historically
+          successful supply. Auto-approved candidates are still auditable, and periodic human audits sample them to
+          protect quality.</li>
+      </ul>
+      <p>The point is not that AI replaces humans. AI takes more of the approval burden over time while the team stays
+        focused on edge cases, brand-sensitive decisions, and quality control. Rejected candidates feed back into the
+        model so similar misses do not keep surfacing.</p>
+
+      <h4>5. Approved Supply and Host Onboarding</h4>
+      <ul>
+        <li>Approved venues move into the active supply pool. If outreach to the host is needed, the system drafts the
+          first message and tracks status.</li>
+      </ul>
+
+      <h4>6. Recommendation Integration</h4>
+      <ul>
+        <li>Approved supply becomes available to the concierge. Booking outcomes and post-experience feedback flow back
+          into the scoring layer, sharpening future ranking.</li>
+      </ul>
+
+      <p>The point of this layer is leverage. A team of two or three people doing curation with this kind of support,
+        plus AI handling the high-confidence cases over time, should produce more vetted supply than a team of ten doing
+        it manually.</p>
+    </section>
+
+    <section id="s8">
+      <h2 class="section-break"><span class="num">Section 8</span>MVP Build Phases</h2>
+      <p>Phasing things so we can learn fast and avoid building anything we do not yet need.</p>
+
+      <div class="phases">
+        <div class="phase">
+          <h4>Phase 1 &middot; Conversational Concierge MVP</h4>
+          <ul>
+            <li><span class="label">Goal.</span> Prove the conversation-first experience with real users.</li>
+            <li><span class="label">Build.</span> Chat interface, minimal onboarding, manually curated supply (start
+              from what Momenta already has), 2-3 recommendation flow, in-conversation booking handoff (can route
+              through existing WhatsApp ops).</li>
+            <li><span class="label">Validate.</span> Do users prefer this to current discovery. Do they book. What do
+              they ask for that we cannot answer yet.</li>
+            <li><span class="label">Defer.</span> Heavy personalization, group accounts, supply automation.</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <h4>Phase 2 &middot; Behavioral Memory Layer</h4>
+          <ul>
+            <li><span class="label">Goal.</span> Make the second and third interactions noticeably better than the
+              first.</li>
+            <li><span class="label">Build.</span> Per-user preference store, conversational memory, lightweight semantic
+              retrieval over past interactions and supply, post-experience feedback loop.</li>
+            <li><span class="label">Validate.</span> Does memory measurably improve recommendation acceptance. Are users
+              coming back more often.</li>
+            <li><span class="label">Defer.</span> Full group profiles, real-time multi-user threads.</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <h4>Phase 3 &middot; Supply Intelligence Automation</h4>
+          <ul>
+            <li><span class="label">Goal.</span> Scale supply quality without scaling the curation team linearly.</li>
+            <li><span class="label">Build.</span> Discovery pipeline, enrichment workers, scoring model, internal review
+              queue, feedback loop into scoring.</li>
+            <li><span class="label">Validate.</span> Is the team approving high-scoring candidates at a high rate. Is
+              supply growth tracking ahead of demand growth.</li>
+            <li><span class="label">Defer.</span> Fully autonomous onboarding.</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <h4>Phase 4 &middot; Social and Group Intelligence</h4>
+          <ul>
+            <li><span class="label">Goal.</span> Make group planning a first-class experience.</li>
+            <li><span class="label">Build.</span> Group profiles, shared concierge threads, group-aware recommendation
+              logic, lightweight invite/coordination flow.</li>
+            <li><span class="label">Validate.</span> Do groups plan inside Momenta instead of bouncing to WhatsApp
+              halfway through.</li>
+            <li><span class="label">Defer.</span> Anything that does not serve the group planning loop directly.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">The phasing is directional. The point is the sequence and what each phase is trying to learn.
+        Concrete delivery scoping would come after a deeper look at the codebase and team capacity.</div>
+    </section>
+
+    <section id="s9">
+      <h2 class="section-break"><span class="num">Section 9</span>Technical Execution Notes</h2>
+      <p>Staying high level here. Detail belongs in implementation, not in a planning doc.</p>
+      <ul>
+        <li><strong>Conversational state.</strong> Keep it simple. A structured store of the current thread, recent
+          turns, and any extracted intents. PostgreSQL is fine for this.</li>
+        <li><strong>Behavioral memory.</strong> Two layers. A structured profile (preferred ambience, typical group
+          size, price band, dietary constraints) updated from explicit and inferred signals. And an embedding-based
+          memory of past interactions and bookings for semantic recall.</li>
+        <li><strong>Semantic retrieval.</strong> <code>pgvector</code> inside the existing Postgres instance. Index past
+          bookings, conversation snippets, and supply descriptions. Query at recommendation time to surface relevant
+          context.</li>
+        <li><strong>Recommendation pipeline.</strong> Pull a candidate set from the curated supply database using
+          structured filters (location, party size, constraints), then re-rank using behavioral signals and semantic
+          similarity. Keep the model swappable.</li>
+        <li><strong>Supply intelligence workers.</strong> BullMQ jobs for discovery, enrichment, scoring, and embedding
+          generation. Each step is independent and observable. Failures are recoverable.</li>
+        <li><strong>Conversational layer.</strong> An LLM call wrapped around retrieved context. The model never invents
+          supply. It only speaks fluently about candidates the system already approved.</li>
+        <li><strong>Feedback ingestion.</strong> Post-experience feedback writes to both the user profile and the supply
+          scoring layer. Both updates are small, frequent, and reversible.</li>
+      </ul>
+
+      <div class="callout">The model never invents supply. It only speaks fluently about candidates the system already
+        approved.</div>
+
+      <p>This is enough to ship a meaningful Phase 1 without adding new infrastructure beyond what is already in place.
+      </p>
+    </section>
+
+    <section id="s10">
+      <h2 class="section-break"><span class="num">Section 10</span>A Note on the Visual Concepts</h2>
+      <p>The mockups embedded throughout this document were generated quickly using Google Stitch as directional visuals
+        for the proposal. They are not meant to represent final UI/UX design work. My main strength is in AI systems,
+        backend architecture, product thinking, and technical execution, so I would still recommend dedicated UX/UI
+        support as the product matures. I included these visuals to make the proposed user and supply flows easier to
+        understand, and to show how quickly we can turn product ideas into something tangible for discussion.</p>
+    </section>
+
+    <section id="s11">
+      <h2 class="section-break"><span class="num">Section 11</span>Closing Thoughts</h2>
+      <p>A lot of consumer products try to be everywhere a user might look. Momenta has a chance to do the opposite, to
+        be the one place a user goes when they actually want to decide. That is a smaller surface, but a much more
+        valuable one.</p>
+      <p>The combination of curated supply and a concierge that gets to know you is not a feature set, it is a
+        relationship. The first booking proves utility. Repeated bookings build trust. Over time, Momenta becomes the
+        place users return to when they want a decision they can feel good about. If we build toward that, the product
+        stops competing with TikTok or Google Maps and starts occupying its own slot in the user's life.</p>
+      <p>Most of the ideas in this document are not complicated on their own. The work is in sequencing them well,
+        keeping the experience calm while the system underneath gets smarter, and resisting the urge to bolt on features
+        that do not serve the core relationship. If we hold that line, I think Momenta becomes something pretty special.
+      </p>
+      <p>Looking forward to building it.</p>
+    </section>
+
+    <div class="colophon">Momenta &middot; Product Execution Companion &middot; Prepared by Henry Giwa</div>
+  </main>
+
+</body>
+
+</html>

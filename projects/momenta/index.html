@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Momenta — Document Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/styles/doc-explorer.css" />
+  <style>
+    :root {
+      --bg: #faf6ef; --surface-low: #f3ece0; --surface: #fdfaf3;
+      --surface-bright: #ebe3d4; --primary: #7a3a2c; --secondary: #a76353;
+      --text-primary: #2a2522; --text-secondary: #4a4341; --text-muted: #807773;
+      --rule: #e3dccf; --topbar-height: 56px;
+      --serif: "Cormorant Garamond", Georgia, serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text-secondary); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--topbar-height); background: var(--surface-low);
+      display: flex; align-items: center; padding: 0 32px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .topbar::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: linear-gradient(90deg, #7a3a2c, #c9a227, #a76353);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 20px; }
+    .topbar-portfolio {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted); text-decoration: none;
+    }
+    .topbar-portfolio:hover { color: var(--primary); }
+    .topbar-brand {
+      font-family: var(--serif); font-weight: 600; font-size: 22px;
+      color: var(--primary); text-decoration: none;
+    }
+    .topbar-sub {
+      font-size: 12px; color: var(--text-muted); margin-left: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .hero {
+      margin-top: var(--topbar-height);
+      padding: 80px 40px 64px;
+      background: var(--surface-low);
+      text-align: center;
+    }
+    .hero-eyebrow {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--primary); margin-bottom: 16px;
+    }
+    .hero-title {
+      font-family: var(--serif); font-weight: 500; font-size: 44px;
+      color: var(--text-primary); line-height: 1.12; margin-bottom: 18px;
+    }
+    .hero-title em { font-style: italic; color: var(--secondary); }
+    .hero-sub {
+      font-size: 17px; line-height: 1.7; max-width: 580px; margin: 0 auto 32px;
+    }
+    .hero-meta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-badge {
+      background: var(--surface-bright); color: var(--text-muted);
+      font-size: 12px; padding: 5px 12px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    .doc-explorer-section { max-width: 1100px; margin: 0 auto; padding: 48px 40px 32px; }
+    .grid-label {
+      font-weight: 600; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 28px;
+    }
+    .doc-grid-section { max-width: 1100px; margin: 0 auto; padding: 0 40px 100px; }
+    .doc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .doc-card,
+    .doc-card:visited {
+      background: var(--surface); border: 1px solid var(--rule);
+      border-radius: 10px; padding: 28px; text-decoration: none;
+      display: flex; flex-direction: column; gap: 12px;
+      transition: transform 0.15s, box-shadow 0.2s;
+      color: var(--text-secondary);
+    }
+    .doc-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(42, 37, 34, 0.08);
+    }
+    .doc-card-tag {
+      font-weight: 700; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--card-accent, var(--primary));
+    }
+    .doc-card-title {
+      font-family: var(--serif); font-weight: 500; font-size: 22px;
+      color: var(--text-primary); line-height: 1.25;
+    }
+    .doc-card-desc {
+      font-size: 13.5px; line-height: 1.65;
+      color: var(--text-secondary);
+    }
+    .doc-card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: auto; padding-top: 8px; border-top: 1px solid var(--rule);
+    }
+    .doc-card-meta { font-size: 11px; color: var(--text-muted); }
+    .doc-card-arrow { color: var(--card-accent, var(--primary)); font-size: 18px; }
+
+    .arch-note {
+      max-width: 1100px; margin: 0 auto; padding: 0 40px 80px;
+    }
+    .arch-note-inner {
+      background: var(--surface); border: 1px solid var(--rule);
+      border-radius: 10px; padding: 32px 36px;
+      border-left: 3px solid var(--secondary);
+    }
+    .arch-note-label {
+      font-weight: 700; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--primary); margin-bottom: 10px;
+    }
+    .arch-note p { font-size: 14.5px; line-height: 1.75; }
+    .arch-note strong { color: var(--text-primary); }
+
+    @media (max-width: 640px) {
+      .hero { padding: 60px 24px 48px; }
+      .hero-title { font-size: 32px; }
+      .doc-explorer-section, .doc-grid-section, .arch-note { padding-left: 20px; padding-right: 20px; }
+      .doc-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="theme-momenta">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="../../index.html" class="topbar-portfolio">← Portfolio</a>
+      <a href="index.html" class="topbar-brand">Momenta</a>
+      <span class="topbar-sub">Document Suite</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <p class="hero-eyebrow">Experience Discovery · AI Systems Architecture</p>
+    <h1 class="hero-title">The <em>Momenta</em><br>Document Suite</h1>
+    <p class="hero-sub">Strategic proposals, execution companions, and engineering architecture for the AI concierge, behavioral memory, and supply intelligence platform.</p>
+    <div class="hero-meta">
+      <span class="hero-badge">May 2026</span>
+      <span class="hero-badge">Confidential — Internal</span>
+      <span class="hero-badge">3 Documents</span>
+    </div>
+  </section>
+
+  <section class="doc-explorer-section">
+    <p class="grid-label">Document Explorer</p>
+    <div class="doc-explorer-layout">
+      <nav class="doc-explorer" data-doc-explorer aria-label="Document explorer">
+        <span class="doc-explorer-label">Browse by category</span>
+
+        <div class="explorer-group" data-open="true">
+          <button type="button" class="explorer-group-toggle" aria-expanded="true">
+            <span class="explorer-chevron" aria-hidden="true"></span>
+            Strategy &amp; Product
+          </button>
+          <div class="explorer-panel">
+            <a href="product-ai-systems-proposal.html"><span class="explorer-doc-type">Proposal</span>Product &amp; AI Systems Proposal</a>
+            <a href="execution-companion.html"><span class="explorer-doc-type">Execution</span>Product Execution Companion</a>
+          </div>
+        </div>
+
+        <div class="explorer-group" data-open="true">
+          <button type="button" class="explorer-group-toggle" aria-expanded="true">
+            <span class="explorer-chevron" aria-hidden="true"></span>
+            Engineering &amp; Architecture
+          </button>
+          <div class="explorer-panel">
+            <a href="engineering-architecture-addendum.html"><span class="explorer-doc-type">Architecture</span>Engineering Architecture Addendum</a>
+          </div>
+        </div>
+      </nav>
+
+      <div>
+        <p class="grid-label">All Documents</p>
+        <div class="doc-grid">
+
+          <a href="product-ai-systems-proposal.html" class="doc-card" style="--card-accent: #7a3a2c;">
+            <span class="doc-card-tag">Strategy · Proposal</span>
+            <h2 class="doc-card-title">Product &amp; AI Systems Proposal</h2>
+            <p class="doc-card-desc">AI concierge direction, contextual discovery, behavioral memory, supply intelligence, and technical evolution strategy.</p>
+            <div class="doc-card-footer">
+              <span class="doc-card-meta">Strategic · May 2026</span>
+              <span class="doc-card-arrow">→</span>
+            </div>
+          </a>
+
+          <a href="execution-companion.html" class="doc-card" style="--card-accent: #a76353;">
+            <span class="doc-card-tag">Product · Execution</span>
+            <h2 class="doc-card-title">Product Execution Companion</h2>
+            <p class="doc-card-desc">Concierge MVP flows, example AI interactions, group dynamics, supply intelligence operations, and phased build plan.</p>
+            <div class="doc-card-footer">
+              <span class="doc-card-meta">Execution · May 2026</span>
+              <span class="doc-card-arrow">→</span>
+            </div>
+          </a>
+
+          <a href="engineering-architecture-addendum.html" class="doc-card" style="--card-accent: #c9a227;">
+            <span class="doc-card-tag">Engineering · Architecture</span>
+            <h2 class="doc-card-title">Engineering Architecture Addendum</h2>
+            <p class="doc-card-desc">Grounded AI principles, concierge flow, behavioral memory, recommendation engine, supply pipeline, data model, and MVP scope.</p>
+            <div class="doc-card-footer">
+              <span class="doc-card-meta">Architecture · May 2026</span>
+              <span class="doc-card-arrow">→</span>
+            </div>
+          </a>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arch-note">
+    <div class="arch-note-inner">
+      <p class="arch-note-label">Architecture Overview</p>
+      <p>Momenta implements a <strong>grounded AI architecture</strong>: the LLM is never the source of truth — <strong>approved supply data</strong> is. A conversational concierge surface sits above intelligence layers for <strong>behavioral memory</strong>, <strong>group-aware recommendations</strong>, and a background <strong>supply intelligence pipeline</strong>. The system optimizes for <em>deciding</em>, not searching — turning fragmented discovery into trusted, contextual experience curation.</p>
+    </div>
+  </div>
+
+  <script src="../../assets/scripts/doc-explorer.js"></script>
+</body>
+</html>
