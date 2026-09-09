@@ -1017,40 +1017,54 @@ interface PlayerArchetypeBadgeProps {
 }</code></pre>
     </div>
 
+    
     <h3 class="sub-heading">12.2 AI Coach APIs</h3>
 
-    <h4 class="sub-sub-heading">POST <code class="inline">/api/v1/coach/chat</code></h4>
+    <h4 class="sub-sub-heading">POST <code class="inline">/api/v1/chat/session</code></h4>
+    <p>Creates a coaching session in one of three conversation modes. Each mode runs the same grounded base prompt plus a mode-specific rule set, so the conversation shape matches the user intent.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">// Request (mode defaults to "coach")
+{ "mode": "interview" }
+
+// Response â€” session context records the mode; interview sessions open
+// with the structured intake invitation
+{
+  "session_id": "uuid-123",
+  "message": "Let's set your coaching baseline...",
+  "context": { "mode": "interview", "interview_summary": "", "focus_areas": [] }
+}</code></pre>
+    </div>
+
+    <h4 class="sub-sub-heading">POST <code class="inline">/api/v1/chat/message</code></h4>
+    <p>Routes the user message through intent classification. Every analytic intent receives assembled grounding (player context, patterns, semantic memories, Conversation Record); the LLM prompt carries three mode-specific rule layers:</p>
+    <ul>
+      <li><strong>Coach (default)</strong> â€” grounded base prompt: answer the question directly, never compute or invent engine evaluations, recall honesty (answer from records or say plainly there is no record).</li>
+      <li><strong>Interview</strong> â€” 4-essentials structured intake (rating goal, weakness, weekly time budget, openings); when complete the model appends an <code class="inline">[INTERVIEW_SUMMARY]</code> block, which the parser strips from the visible reply and persists into the memory layer idempotently.</li>
+      <li><strong>Analyze</strong> â€” technical position replies built only from the engine facts section; when no engine facts are present the model asks for a FEN rather than estimating an evaluation.</li>
+    </ul>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-json">// Request
-{ "message": "Why do I keep missing knight forks?", "session_id": "uuid-123" }
+{ "session_id": "uuid-123", "message": "Why do I keep missing knight forks?" }
 
 // Response
 {
-  "message": "Based on your game history, you've missed 12 knight fork opportunities...",
-  "referenced_patterns": [{ "id": 456, "type": "tactical" }],
-  "suggested_drills": [{
-    "type": "knight_fork_tactics",
-    "description": "Practice recognizing knight fork patterns",
-    "estimated_time": "15 minutes"
-  }],
-  "session_id": "uuid-123"
+  "session_id": "uuid-123",
+  "response": {
+    "message": "Based on your game history, you've missed 12 knight fork opportunities...",
+    "intent": "coaching",
+    "used_llm": true,
+    "llm_provider": "local",
+    "cited_pattern_ids": [456],
+    "suggestions": []
+  }
 }</code></pre>
     </div>
 
-    <h4 class="sub-sub-heading">GET <code class="inline">/api/v1/coach/suggestions</code></h4>
-    <div class="code-block">
-      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-json">{
-  "suggestions": [
-    { "type": "pattern_based", "text": "Why do I keep missing knight forks?", "pattern_id": 456 },
-    { "type": "opening", "text": "How can I improve my French Defense?", "pattern_id": 789 },
-    { "type": "general", "text": "What should I focus on to improve?" }
-  ]
-}</code></pre>
-    </div>
-
-    <h3 class="sub-heading">12.3 Move Timing API</h3>
+    <h4 class="sub-sub-heading">GET <code class="inline">/api/v1/chat/session/{session_id}/history</code> &middot; GET <code class="inline">/api/v1/chat/sessions</code> &middot; POST <code class="inline">/api/v1/chat/quick-analysis</code></h4>
+    <p>History restores a conversation (with the session's mode); <code class="inline">/chat/sessions</code> lists the user's conversations for the workspace sidebar; quick-analysis analyzes a FEN without creating a session.</p>
+<h3 class="sub-heading">12.3 Move Timing API</h3>
     <h4 class="sub-sub-heading">GET <code class="inline">/api/v1/timing/{user_id}</code></h4>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
@@ -1069,6 +1083,56 @@ interface PlayerArchetypeBadgeProps {
     </div>
   </section>
 
+
+    <h3 class="sub-heading">12.4 Coaching Memory, Training &amp; Digest APIs</h3>
+
+    <h4 class="sub-sub-heading">GET <code class="inline">/api/v1/users/{user_id}/memories</code></h4>
+    <p>Ownership-checked, newest-first catalog of the coach's semantic memory (pattern facts and coaching notes, including interview summaries). Powers the "What your coach knows" surface. Embeddings are never returned.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">// GET /api/v1/users/7/memories?content_type=coaching&limit=20
+{
+  "memories": [
+    { "id": 12, "content_type": "coaching", "content_text": "Interview summary (Sep 2026). Goal: 1700 rapid ..." }
+  ],
+  "total_count": 24, "limit": 20, "offset": 0
+}</code></pre>
+    </div>
+
+    <h4 class="sub-sub-heading">Training APIs â€” plans, drills, progress</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Endpoint</th><th>Behavior</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">GET/POST /api/v1/training/{user_id}/plans</code></td><td>List plans / create a coach- or interview-authored plan (<code class="inline">plan_version</code> unique per user)</td></tr>
+          <tr><td><code class="inline">GET /api/v1/training/{user_id}/plans/active</code></td><td>Active plan with drills (404 when none)</td></tr>
+          <tr><td><code class="inline">POST /api/v1/training/{user_id}/drills</code></td><td>Save an ad-hoc or plan drill</td></tr>
+          <tr><td><code class="inline">PATCH /api/v1/training/{user_id}/drills/{id}</code></td><td>Transition drill to <code class="inline">in_progress</code> or <code class="inline">skipped</code></td></tr>
+          <tr><td><code class="inline">POST /api/v1/training/{user_id}/drills/{id}/complete</code></td><td>Record the attempt (answer, correctness, score); syncs plan counters, auto-completes the plan</td></tr>
+          <tr><td><code class="inline">GET /api/v1/training/{user_id}/progress</code></td><td>All-time and per-plan completion rollups</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 class="sub-sub-heading">Notifications â€” the weekly digest feed</h4>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">// GET /api/v1/users/{user_id}/notifications        (unread_only, limit, offset)
+// PATCH /api/v1/users/{user_id}/notifications/{id}/read
+{
+  "notifications": [
+    {
+      "notification_type": "weekly_digest",
+      "title": "Your ChessIQ coaching digest â€” Sep 02 â€“ Sep 09",
+      "body": "Focus area this week: Phase Weakness (critical). Opening-phase ACPL averages 157.2...",
+      "payload_json": { "period_start": "...", "games_played": 12, "drills_completed_week": 3 },
+      "is_read": false
+    }
+  ],
+  "unread_count": 1
+}</code></pre>
+    </div>
+    <p>Digest generation runs on Celery beat (embedded in the worker, Monday 10:00 UTC, per-user opt-out): it grounds the coaching tip in the week's pattern facts, then persists the in-app notification; email delivery remains a separately-gated stub.</p>
   <!-- Section 13 -->
   <section class="section-block">
     <div id="s13" class="section-anchor"></div>
@@ -1214,3 +1278,5 @@ flowchart TB
 <script src="../../assets/scripts/doc-suite.js"></script>
 </body>
 </html>
+
+
