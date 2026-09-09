@@ -140,17 +140,15 @@ flowchart TB
             ANALYSES[game_analyses]
             PATTERNS[player_patterns]
             PROFILES[player_profiles]
-            CHAT[coach_conversations]
+            CHAT[chat_sessions]
             TIMING[move_timing_data]
         end
     end
     subgraph Tier2["Tier 2: Semantic Memory"]
         PGVEC[(pgvector Extension)]
-        subgraph Vectors["Embeddings"]
-            COACH_EMB[coaching_summaries]
-            PAT_EMB[pattern_embeddings]
-            GAME_EMB[game_summaries]
-            BEHAV_EMB[behavioral_notes]
+        subgraph Vectors["Embeddings (semantic_memory)"]
+            PAT_EMB[pattern slice]
+            COACH_EMB[coaching slice]
         end
     end
     subgraph Tier3["Tier 3: Ephemeral Cache"]
@@ -251,7 +249,7 @@ CREATE TABLE semantic_memory (
   memory_type TEXT NOT NULL,       -- 'pattern', 'coaching', 'behavioral', 'game_summary'
   source_id BIGINT,                -- FK to source table (e.g., pattern_id)
   content_summary TEXT NOT NULL,   -- Human-readable summary
-  embedding VECTOR(1536),          -- OpenAI text-embedding-3-small dimensions
+  embedding VECTOR(768),           -- Gemini gemini-embedding-001 dimensions
   metadata JSONB,                  -- Source references, timestamps, tags
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_accessed_at TIMESTAMPTZ DEFAULT NOW()
@@ -298,13 +296,13 @@ CREATE INDEX idx_semantic_user_type ON semantic_memory (user_id, memory_type);</
       <pre class="mermaid">
 flowchart TB
     subgraph MemoryHorizons["Memory Horizons"]
-        STM[Short-Term Memory<br/>Current Conversation<br/>Last 10 messages]
+        STM[Short-Term Memory<br/>Current Conversation<br/>7-message window + rolling summary]
         MTM[Medium-Term Memory<br/>Recent Patterns<br/>Last 30 days]
         LTM[Long-Term Memory<br/>Player Archetype<br/>Lifetime patterns]
         SEM[Semantic Memory<br/>Similar situations<br/>Conceptual retrieval]
     end
     subgraph Sources["Memory Sources"]
-        CHAT[coach_conversations]
+        CHAT[chat_sessions]
         RECENT[player_patterns recent]
         PROFILE[player_profiles]
         VECT[semantic_memory vectors]
@@ -327,20 +325,15 @@ flowchart TB
 
     <div id="s3-1"></div>
     <h3 class="sub-heading">3.1 Short-Term Conversational Memory</h3>
-    <p><strong>Scope:</strong> Current session, last 10–15 exchanges · <strong>Storage:</strong> <code class="inline">coach_conversations</code> (SQL)</p>
+    <p><strong>Scope:</strong> Current session, 7 most recent messages before the current turn · <strong>Storage:</strong> <code class="inline">chat_sessions.context_json</code> (SQL, durable) + Redis hot cache</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class ShortTermMemory:
-    def retrieve(self, session_id: str, limit: int = 10) -> List[Message]:
-        return self.db.query("""
-            SELECT message_role, message_content, created_at
-            FROM coach_conversations
-            WHERE session_id = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (session_id, limit))</code></pre>
+    def recent_window(self, context: ChatContext, n: int = 7) -> List[ChatMessage]:
+        """The 7 most recent messages before the current turn."""
+        return context.get_recent_messages(n)[:-1]</code></pre>
     </div>
-    <p><strong>Pruning Strategy:</strong> Always include last 3 exchanges → add earlier exchanges if token budget allows → summarize older parts if needed.</p>
+    <p><strong>No-silent-cut policy:</strong> the 7-message window is always included; older messages are folded into the rolling thread summary (§7.2), and the Conversation Record (§7.3) pins the earliest exchanges on every call. Context degrades to compressed narrative — it never just disappears.</p>
 
     <div id="s3-2"></div>
     <h3 class="sub-heading">3.2 Medium-Term Player Memory</h3>
@@ -383,29 +376,39 @@ class PlayerProfile:
     <p><strong>Scope:</strong> Conceptually similar situations across all user history · <strong>Storage:</strong> <code class="inline">semantic_memory</code> with pgvector</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-python">class SemanticMemory:
+      <pre><code class="language-python">class SemanticRetriever:
+    # Recall is baseline: every retrieval-eligible question searches the
+    # full memory store. Similarity alone decides what surfaces — content
+    # type is never narrowed by keywords. The similarity floor defaults
+    # to permissive (0.0); relevance comes from ordering, not hard cutoffs.
+    DEFAULT_CONTENT_TYPES = ['pattern', 'coaching']
+
+    def retrieval_limit(self, content_types: List[str]) -> int:
+        """Top-k scales with the number of slices searched: 5 base -> 8 for both."""
+        return 5 + 3 * max(0, len(content_types or []) - 1)
+
     async def retrieve_similar_memories(
-        self, user_id: int, query: str, memory_types: List[str], top_k: int = 5
+        self, user_id: int, query: str,
+        content_types: List[str] = DEFAULT_CONTENT_TYPES,
+        limit: int = 8,
     ) -> List[SemanticMemory]:
         # 1. Generate query embedding
         query_embedding = await self.embedder.embed(query)
 
-        # 2. Vector similarity search
-        results = await self.db.query("""
+        # 2. Vector similarity search (Gemini gemini-embedding-001, 768 dims)
+        return await self.db.query("""
             SELECT id, memory_type, content_summary, metadata,
                    1 - (embedding <=> %s::vector) as similarity_score
             FROM semantic_memory
             WHERE user_id = %s AND memory_type = ANY(%s)
             ORDER BY embedding <=> %s::vector
             LIMIT %s
-        """, (query_embedding, user_id, memory_types, query_embedding, top_k))
-
-        # 3. Filter by similarity threshold
-        return [r for r in results if r.similarity_score > 0.75]</code></pre>
+        """, (query_embedding, user_id, content_types, query_embedding, limit))</code></pre>
     </div>
 
     <div id="s3-5"></div>
     <h3 class="sub-heading">3.5 Memory Ranking &amp; Pruning</h3>
+    <p><strong>Shipped today:</strong> ranking is the vector store's similarity order (§3.4). The composite ranker below is a planned refinement layered on top of that order:</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class MemoryRanker:
@@ -535,15 +538,15 @@ flowchart TB
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class SemanticRetriever:
-    def map_intent_to_memory_types(self, intent: Intent) -> List[str]:
-        mapping = {
-            IntentType.PATTERN_QUESTION:  ['pattern', 'coaching'],
-            IntentType.OPENING_QUESTION:  ['opening_weakness', 'coaching'],
-            IntentType.TACTIC_QUESTION:   ['pattern', 'behavioral'],
-            IntentType.IMPROVEMENT_PLAN:  ['coaching', 'recommendation'],
-            IntentType.GAME_REVIEW:       ['game_summary', 'pattern'],
-        }
-        return mapping.get(intent.type, ['pattern', 'coaching', 'behavioral'])</code></pre>
+    # Recall is baseline: intent keywords never gate WHAT is searched.
+    # Every retrieval-eligible question gets the full store; keywords
+    # only enable deeper grounding (dated chronology) for recall questions.
+    DEFAULT_CONTENT_TYPES = ['pattern', 'coaching']
+
+    def retrieval_scope(self, intent: Intent) -> Tuple[List[str], int]:
+        content_types = self.DEFAULT_CONTENT_TYPES
+        # top-k scales with slices searched: 8 when both are searched
+        return content_types, 5 + 3 * (len(content_types) - 1)</code></pre>
     </div>
 
     <div id="s4-3"></div>
@@ -557,7 +560,7 @@ flowchart TB
             self.structured.retrieve(user_id, query),
             self.semantic.retrieve(user_id, query),
             self.profile.get(user_id),
-            self.chat_history.get_recent(user_id, limit=5)
+            self.chat_history.get_recent(user_id, limit=7)
         )
 
         return CoachContext(
@@ -610,7 +613,7 @@ sequenceDiagram
     end
 
     API->>PA: Assemble context
-    PA->>PA: Rank by relevance, prune to token budget
+    PA->>PA: Assemble layered context (memories, summary, record, window)
     PA->>LLM: Send contextualized prompt
     LLM-->>PA: Coaching response
     PA-->>U: "I see a critical pattern: you convert only 45% of winning endgames..."
@@ -621,28 +624,34 @@ sequenceDiagram
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class PromptAssembler:
-    def assemble(self, context: CoachContext, query: str, token_budget: int = 4000) -> Prompt:
+    def assemble(self, context: CoachContext, query: str, recall: bool = False) -> Prompt:
         sections = []
-        current_tokens = 0
 
-        # 1. System prompt (~200 tokens, always included)
+        # 1. System prompt: coaching rules + grounding rules +
+        #    recall-honesty rule (never answer recall questions from the
+        #    coach's own past lines or memory summaries)
         sections.append(self.system_prompt())
 
-        # 2. Player profile (~300 tokens, high priority)
-        if context.profile:
-            sections.append(self.format_profile(context.profile))
-
-        # 3. Relevant patterns (~800 tokens, ranked by severity)
+        # 2. Player context + relevant semantic memories
+        #    (similarity matches from the full memory store)
         if context.patterns:
-            sections.append(self.format_patterns(context.patterns, max_tokens=800))
+            sections.append(self.format_patterns(context.patterns))
+        if context.semantic_memories:
+            sections.append(self.format_semantic_memories(context.semantic_memories))
 
-        # 4. Semantic memories (~500 tokens, if token budget allows)
-        if context.semantic_memories and current_tokens < token_budget * 0.7:
-            sections.append(self.format_semantic_memories(context.semantic_memories[:3]))
+        # 3. Rolling thread summary — everything that has scrolled out of
+        #    the recent window, compressed (never silently cut)
+        if context.early_summary:
+            sections.append(self.format_thread_summary(context.early_summary))
 
-        # 5. Conversation history (~600 tokens, if space)
-        if context.conversation_history and current_tokens < token_budget * 0.85:
-            sections.append(self.format_history(context.conversation_history, max_tokens=600))
+        # 4. Conversation record: earliest exchanges with an "Earliest
+        #    player message" headline; recall questions also receive the
+        #    full dated player-message chronology
+        sections.append(self.format_conversation_record(context, include_chronology=recall))
+
+        # 5. Recent window: the 7 messages before the current turn,
+        #    verbatim as chat turns (always included)
+        sections.append(self.format_recent_window(context.get_recent_messages(7)[:-1]))
 
         # 6. Current question (always included)
         sections.append(f"\n## Current Question\nPlayer: {query}\n\nCoach: ")
@@ -751,73 +760,48 @@ Phase performance: Opening {analysis.phase_scores.opening}%, Middlegame {analysi
     </div>
     <div class="section-divider"></div>
 
-    <h3 class="sub-heading">7.1 Chat Session Schema</h3>
+    <p>Coaching memory has four working layers: the <strong>recent window</strong> fed to the LLM, a <strong>rolling thread summary</strong> of everything that has scrolled out of it, a <strong>conversation record</strong> that always pins the earliest exchanges, and <strong>semantic memories</strong> extracted asynchronously after every exchange. The window is never silently cut — context that leaves it is summarized, not discarded.</p>
+
+    <h3 class="sub-heading">7.1 Conversation Record</h3>
+    <p>One durable row per conversation. Messages, coach state, and the rolling summary all live in a single serialized <code class="inline">context_json</code> payload — Postgres is the source of truth, Redis holds the hot cache in front of it.</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">sql</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-sql">-- Chat sessions (conversation containers)
+      <pre><code class="language-sql">-- Durable coaching conversation record
 CREATE TABLE chat_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title TEXT,                    -- AI-generated summary ("Rook Endgame Discussion")
-  context_snapshot JSONB,        -- Player state at session start
-  message_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  last_activity_at TIMESTAMPTZ DEFAULT NOW(),
-  is_archived BOOLEAN DEFAULT FALSE
+  session_id   VARCHAR(36) PRIMARY KEY,          -- conversation UUID
+  user_id      INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  context_json JSON NOT NULL,                    -- serialized ChatContext
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Individual messages
-CREATE TABLE chat_messages (
-  id BIGSERIAL PRIMARY KEY,
-  session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
-  message_role TEXT NOT NULL,    -- 'user', 'assistant', 'system'
-  content TEXT NOT NULL,
-  referenced_patterns JSONB,
-  referenced_games JSONB,
-  model_used TEXT,
-  tokens_used JSONB,             -- {input: 1200, output: 350}
-  latency_ms INT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE INDEX idx_chat_sessions_user_updated
+  ON chat_sessions (user_id, updated_at);
 
--- Session summaries for semantic retrieval
-CREATE TABLE chat_summaries (
-  id BIGSERIAL PRIMARY KEY,
-  session_id UUID UNIQUE REFERENCES chat_sessions(id) ON DELETE CASCADE,
-  user_id INT NOT NULL,
-  summary_text TEXT,
-  key_topics JSONB,
-  resolved_questions JSONB,
-  open_questions JSONB,
-  generated_at TIMESTAMPTZ DEFAULT NOW()
-);</code></pre>
+-- context_json payload:
+-- {
+--   "current_position":     "<FEN the coach is anchored to>",
+--   "conversation_history": [                    -- every message, verbatim
+--     { "role": "user" | "assistant" | "system",
+--       "content": "...",
+--       "position_fen": null, "intent": null,
+--       "timestamp": "<ISO>", "metadata": {} }
+--   ],
+--   "skill_level":   "intermediate",
+--   "focus_areas":   [],
+--   "recent_topics": [],
+--   "early_summary": "...",  -- rolling thread summary (§7.2)
+--   "summary_upto":  0        -- history index the summary covers through
+-- }</code></pre>
     </div>
+    <p>The LLM's visible window is the <strong>7 most recent messages before the current turn</strong>. Older messages stay on the record; they surface through the rolling summary (§7.2) and the context layers below instead of disappearing.</p>
 
-    <h3 class="sub-heading">7.3 Raw Chat History vs. Semantic Memory</h3>
-    <div class="table-wrapper">
-      <table>
-        <thead><tr><th>Aspect</th><th>Raw Chat History</th><th>Semantic Memory</th></tr></thead>
-        <tbody>
-          <tr><td><strong>Storage</strong></td><td>SQL (<code class="inline">chat_messages</code>)</td><td>Vector DB (<code class="inline">semantic_memory</code>)</td></tr>
-          <tr><td><strong>Scope</strong></td><td>Exact conversation</td><td>Conceptual summary</td></tr>
-          <tr><td><strong>Use Case</strong></td><td>Session continuity</td><td>Cross-session retrieval</td></tr>
-          <tr><td><strong>Token Cost</strong></td><td>High (every word)</td><td>Low (summarized)</td></tr>
-          <tr><td><strong>Retrieval</strong></td><td>Sequential access</td><td>Similarity search</td></tr>
-          <tr><td><strong>Lifespan</strong></td><td>30–90 days</td><td>Permanent</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="callout secondary">
-      <span class="callout-label">Why This Separation Matters</span>
-      <p>User can have 1000+ messages, but only top 5 <em>relevant</em> memories get injected into the LLM context. Sending full conversation history would consume the entire context window and degrade response quality.</p>
-    </div>
-
-    <h3 class="sub-heading">7.4 As-Built Chat Memory Pipeline (2026-09)</h3>
-    <p>The sections above sketch the original design. The shipped pipeline (2026-09) implements the same summarize-then-embed doctrine with two deliberate divergences: <strong>no importance filtering</strong> (every completed exchange becomes a memory — deterministic ids keep re-runs idempotent), and <strong>breakthrough / recurring-struggle detection is deferred</strong>.</p>
+    <h3 class="sub-heading">7.2 Memory Extraction Pipeline</h3>
+    <p>Extraction is asynchronous and debounced per session — rapid exchanges never spawn parallel extraction runs.</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-text">After every coaching exchange:
-  1. process_message persists the exchange (Postgres source of truth)
+  1. process_message persists the exchange into chat_sessions.context_json
   2. fire-and-forget schedule call (TESTING-guarded, exception-safe)
   3. Redis SET NX debounce per session (TTL 300s, 30s countdown)
      -> Celery 'analysis' queue -> extract_chat_memories_task
@@ -830,32 +814,53 @@ CREATE TABLE chat_summaries (
      md5(session_id + ":" + user_message_index)
      only new exchanges are embedded (Gemini gemini-embedding-001, 768 dims)
   B. Rolling thread summary (sync_session_thread_summary)
-     messages older than the 7-message LLM window are folded into a stored
-     summary (context_json.early_summary / summary_upto)
-     one incremental LLM call per run, only when new out-of-window messages
-     exist; factual, under 250 words</code></pre>
+     messages older than the 7-message window are folded into
+     context_json.early_summary / summary_upto
+     one incremental LLM call per run, only when new out-of-window
+     messages exist; factual, under 250 words</code></pre>
     </div>
 
-    <p><strong>Context layers injected into every coach LLM call</strong> (system prompt, in order):</p>
+    <h3 class="sub-heading">7.3 Context Injection &amp; Recall Honesty</h3>
+    <p>Every coach LLM call receives the same backbone, in order:</p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Layer</th><th>Covers</th><th>Injected when</th></tr></thead>
         <tbody>
-          <tr><td>Player Context + Relevant Semantic Memories</td><td>Similarity matches from the full memory store</td><td>Every call (small talk / unknown skip retrieval)</td></tr>
-          <tr><td>Thread Summary</td><td>Everything older than the 7-message window, compressed</td><td>Every call, once a summary exists</td></tr>
-          <tr><td>Conversation Record</td><td>Earliest exchanges + "Earliest player message" headline</td><td>Every call; recall-flagged questions additionally get the full dated player-message chronology (last 60 entries)</td></tr>
-          <tr><td>Recent window</td><td>Last 7 messages, verbatim</td><td>Every call</td></tr>
+          <tr><td>Relevant Semantic Memories</td><td>Similarity matches from the full memory store</td><td>Every retrieval-eligible call (small talk / unknown skip retrieval)</td></tr>
+          <tr><td>Rolling Thread Summary</td><td>Everything older than the 7-message window, compressed</td><td>Every call, once a summary exists</td></tr>
+          <tr><td>Conversation Record</td><td>Earliest exchanges, with an "Earliest player message" headline</td><td>Every call; recall-flagged questions additionally receive the full dated player-message chronology (last 60 entries, 100 chars each)</td></tr>
+          <tr><td>Recent Window</td><td>Last 7 messages before the current turn, verbatim</td><td>Every call</td></tr>
         </tbody>
       </table>
     </div>
     <div class="callout secondary">
       <span class="callout-label">Recall Is Baseline, Not a Question Shape</span>
-      <p>Every retrieval-eligible question searches the FULL memory store — <code class="inline">["pattern", "coaching"]</code> — with the limit scaled to <code class="inline">5 + 3 × (slices − 1)</code> (8 when both are searched). Similarity alone decides what surfaces; keywords never gate <em>what</em> is searched, they only enable the chronology grounding. A standing recall-honesty rule restricts "what did I say / first message" answers to the visible history, Conversation Record, and retrieved memories — never the coach's own lines or memory summaries. "What was the first message I sent" is additionally answered deterministically from the session record (no LLM, no retrieval).</p>
+      <p>Every retrieval-eligible question searches the full memory store — <code class="inline">["pattern", "coaching"]</code> — with the top-k scaled to <code class="inline">5 + 3 × (slices − 1)</code> (8 when both slices are searched). Similarity alone decides what surfaces; keywords never gate <em>what</em> is searched — they only enable the chronology grounding for "what did I ask / what did we discuss" questions. A standing system-prompt rule restricts recall answers to the visible history, Conversation Record, and retrieved memories — never the coach's own past lines or memory summaries. "What was the first message I sent" is answered deterministically from the session record (no LLM, no retrieval).</p>
     </div>
     <div class="callout warning">
-      <span class="callout-label">LLM Reliability Substrate</span>
-      <p>Every coach and summary call treats empty completions as provider failures (per-provider retries, then chain failover local → openrouter → openai), sends <code class="inline">x-opencode-session</code> when configured (OpenCode Go returns 400s or degraded/empty completions without it), and — per product directive — returns an honest "can't reach my language-model service" reply on failure. All canned response templates were removed; the coach never fabricates an answer.</p>
+      <span class="callout-label">LLM Reliability</span>
+      <p>Every coach and summary call treats an empty completion as a provider failure: per-provider retries, then failover across the provider chain (local → openrouter → openai). The local provider sends <code class="inline">x-opencode-session</code> when configured — OpenCode Go returns 400s or degraded/empty completions without it. There are no canned response templates: when the LLM cannot be reached, the coach says so and answers nothing fabricated.</p>
     </div>
+
+    <h3 class="sub-heading">7.4 Raw Chat History vs. Semantic Memory</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Aspect</th><th>Raw Chat History</th><th>Semantic Memory</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Storage</strong></td><td>SQL (<code class="inline">chat_sessions.context_json</code>)</td><td>Vector DB (<code class="inline">semantic_memory</code>)</td></tr>
+          <tr><td><strong>Scope</strong></td><td>Exact conversation</td><td>Conceptual summary</td></tr>
+          <tr><td><strong>Use Case</strong></td><td>Session continuity</td><td>Cross-session retrieval</td></tr>
+          <tr><td><strong>Token Cost</strong></td><td>High (every word)</td><td>Low (summarized)</td></tr>
+          <tr><td><strong>Retrieval</strong></td><td>Sequential access</td><td>Similarity search</td></tr>
+          <tr><td><strong>Lifespan</strong></td><td>Session lifetime (retained on the record)</td><td>Permanent</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout secondary">
+      <span class="callout-label">Why This Separation Matters</span>
+      <p>Only the most relevant memories get injected into the LLM context — top 8 when both slices of the store are searched (§7.3). Sending full conversation history would consume the entire context window and degrade response quality.</p>
+    </div>
+
   </section>
 
   <!-- Section 8 -->
@@ -1138,4 +1143,5 @@ WHERE last_seen_at > NOW() - INTERVAL '90 days';</code></pre>
 <script src="../../assets/scripts/doc-suite.js"></script>
 </body>
 </html>
+
 
