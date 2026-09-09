@@ -202,7 +202,11 @@
     <div class="fr-item"><div class="fr-id">FR-COACH-1</div><div class="fr-text">Coaching Insights panel lists 3–7 key insights with: Category, Headline, Description, Severity level (low/medium/high), Recommended drill type.</div></div>
     <div class="fr-item"><div class="fr-id">FR-COACH-2</div><div class="fr-text">Insights derived from: repeated blunders in similar positions, high ACPL or low accuracy in specific phases, particular tactical themes frequently missed.</div></div>
 
-    <div id="s3-6"></div>
+     <h3 class="sub-heading">3.5.1 Weekly Coaching Loop</h3>
+    <div class="fr-item"><div class="fr-id">FR-DIGEST-1</div><div class="fr-text">Every week (automatically, post-analysis), the coach compiles a digest of what changed and what deserves focus, grounded in that week's pattern facts and drills completed.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-DIGEST-2</div><div class="fr-text">Digests surface in-app in the Weekly Coaching Loop feed with unread state and mark-as-read; email delivery is optional and separately controlled.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-DIGEST-3</div><div class="fr-text">The loop closes: digest â†’ focus areas â†’ coach-authored drills â†’ next week's digest reports on drill completion.</div></div>
+<div id="s3-6"></div>
     <h3 class="sub-heading">3.6 Analysis Workflow</h3>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-1</div><div class="fr-text">"Analyze All Games" → frontend calls backend endpoint → backend queues Celery jobs for unanalyzed games → frontend shows modal with queued count.</div></div>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-2</div><div class="fr-text">Frontend periodically polls summary/games status until all queued games show <code class="inline">is_analyzed = true</code> or timeout/max polling hits.</div></div>
@@ -211,14 +215,13 @@
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-5</div><div class="fr-text"><span class="badge badge-premium">Premium</span> Pro/Elite users can enable <strong>automatic background analysis</strong>: periodic Chess.com game fetching, auto-queue for Stockfish, incremental profile updates.</div></div>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-6</div><div class="fr-text"><span class="badge badge-premium">Premium</span> Auto-analysis generates scheduled reports (daily/weekly coaching summary) delivered as in-app notifications and optionally via email.</div></div>
 
-    <div id="s3-7"></div>
-    <h3 class="sub-heading">3.7 Training Mode</h3>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-1</div><div class="fr-text">Training Mode accessible from game rows ("Train this game") or insight cards ("Practice rook endgames").</div></div>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-2</div><div class="fr-text">Training mode includes: interactive board, move list, engine evaluation bar (optional for MVP).</div></div>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-3</div><div class="fr-text">Drill behavior: board shows position just before user's mistake → user chooses best move → correct: confirmation + explanation → incorrect: feedback + engine move + retry.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-4</div><div class="fr-text">Track number of drills attempted and success rate by theme.</div></div>
-
-    <div id="s3-8"></div>
+     <div id="s3-7"></div>
+    <h3 class="sub-heading">3.7 Training Artifacts</h3>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-1</div><div class="fr-text">The coach (in Coach or Interview mode) saves drills and training plans focused on the player's detected patterns; everything saved surfaces in the player's Training collection.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-2</div><div class="fr-text">Active plan view: title, focus areas (from the interview baseline and pattern profile), and a progress bar over the plan's drill set.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-3</div><div class="fr-text">Drill workflow: start a drill, record the attempt (optional answer, solved / missed), or skip; plan counters sync automatically and plans complete when their drills do.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-4</div><div class="fr-text">Progress rollups: all-time attempts and success by drill type, plus per-plan completion â€” the coach uses the same data to adjust future plans.</div></div>
+<div id="s3-8"></div>
     <h3 class="sub-heading">3.8 Pattern Recognition Engine</h3>
     <p>The Pattern Recognition Engine is the <strong>intelligence layer</strong> that transforms individual game analyses into personalized coaching insights. It operates on the principle of <strong>longitudinal analysis</strong> — identifying recurring patterns across many games.</p>
 
@@ -263,28 +266,34 @@
     <h4 class="sub-sub-heading">3.9.3 Time-Based Recommendations</h4>
     <div class="fr-item"><div class="fr-id">FR-TIMING-7</div><div class="fr-text"><strong>Personalized Time Management Coaching</strong> — Recommend time allocation strategies; suggest thinking heuristics; flag opening lines where user consistently overspends.</div></div>
 
-    <div id="s3-10"></div>
+     <div id="s3-10"></div>
     <h3 class="sub-heading">3.10 AI Coach / Conversational Interface</h3>
-    <p>The AI Coach is a <strong>primary interface</strong> of ChessIQ — not an add-on, but a core way users interact with their chess intelligence.</p>
+    <p>The AI Coach is a <strong>primary interface</strong> of ChessIQ â€” not an add-on, but a core way users interact with their chess intelligence.</p>
 
-    <h4 class="sub-sub-heading">3.10.1 Conversational Capabilities</h4>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-1</div><div class="fr-text"><strong>Pattern-Based Questions</strong> — "Why do I keep blundering in the middlegame?", "What openings fit my style?", "How has my play changed over the last 3 months?"</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-2</div><div class="fr-text"><strong>Specific Game Questions</strong> — "Why was move 18 a mistake?", "Was I winning at any point?", "Why did I spend 5 minutes and still blunder here?"</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-3</div><div class="fr-text"><strong>Comparative Analysis</strong> — "How does my blitz compare to rapid?", "Do I play better as White or Black?", "Am I improving in tactics?"</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-4</div><div class="fr-text"><strong>Improvement Planning</strong> — "Create a training plan for my endgame weaknesses", "Recommend drills for my knight fork problem."</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-5</div><div class="fr-text"><strong>Opening &amp; Repertoire Guidance</strong> — "What opening should I play against 1.e4?", "Is the Sicilian right for me?"</div></div>
+    <h4 class="sub-sub-heading">3.10.1 Three Conversation Modes</h4>
+    <p>Every coaching conversation runs in one of three modes, selected when the conversation starts:</p>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-0a</div><div class="fr-text"><strong>Coach mode (default)</strong> â€” grounded improvement conversation about the player's patterns, games, and goals.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-0b</div><div class="fr-text"><strong>Analyze mode</strong> â€” position-focused technical analysis; the user pastes a FEN and receives an answer built only on engine facts, never an estimated evaluation.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-0b</div><div class="fr-text"><strong>Interview mode</strong> â€” a structured baseline intake: the coach asks short, single questions covering the rating goal, the self-perceived weakness, the weekly time budget, and the openings; the completed profile is saved to the coach's memory and becomes the player's focus areas. The interview never invents facts to fill a gap.</div></div>
 
-    <h4 class="sub-sub-heading">3.10.2 AI Coach Intelligence Requirements</h4>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-6</div><div class="fr-text"><strong>Context-Aware Responses</strong> — Must reference user's actual patterns and data; include specific examples from user's games; avoid generic advice.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-7</div><div class="fr-text"><strong>Multi-Source Intelligence</strong> — Synthesizes: Pattern Engine outputs, Stockfish findings, historical game trends, time management patterns, phase-based performance.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-8</div><div class="fr-text"><strong>Conversational Memory</strong> — Maintain context within a session; reference prior questions; build upon established player profile.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-9</div><div class="fr-text"><strong>Actionable Recommendations</strong> — Specific and actionable; include direct drill links; prioritize by impact and feasibility.</div></div>
+    <h4 class="sub-sub-heading">3.10.2 Conversational Capabilities</h4>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-1</div><div class="fr-text"><strong>Pattern-Based Questions</strong> â€” "Why do I keep blundering in the middlegame?", "What openings fit my style?", "How has my play changed over the last 3 months?"</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-2</div><div class="fr-text"><strong>Specific Game Questions</strong> â€” "Why was move 18 a mistake?", "Was I winning at any point?", "Why did I spend 5 minutes and still blunder here?"</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-3</div><div class="fr-text"><strong>Comparative Analysis</strong> â€” "How does my blitz compare to rapid?", "Do I play better as White or Black?", "Am I improving in tactics?"</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-4</div><div class="fr-text"><strong>Improvement Planning</strong> â€” "Create a training plan for my endgame weaknesses", "Recommend drills for my knight fork problem."</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-5</div><div class="fr-text"><strong>Opening &amp; Repertoire Guidance</strong> â€” "What opening should I play against 1.e4?", "Is the Sicilian right for me?"</div></div>
 
-    <h4 class="sub-sub-heading">3.10.3 Explanation Quality</h4>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-10</div><div class="fr-text"><strong>Human-Readable Explanations</strong> — Conversational language (not notation-heavy); analogies and conceptual explanations; depth adapted to user skill level.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-11</div><div class="fr-text"><strong>Evidence-Based Coaching</strong> — Cite specific evidence ("In 12 similar positions…"); show statistics; reference patterns by confidence level.</div></div>
+    <h4 class="sub-sub-heading">3.10.3 AI Coach Intelligence Requirements</h4>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-6</div><div class="fr-text"><strong>Context-Aware Responses</strong> â€” Must reference the player's actual patterns and data; include specific examples from the player's games; avoid generic advice.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-7</div><div class="fr-text"><strong>Multi-Source Intelligence</strong> â€” Synthesizes: Pattern Engine outputs, Stockfish findings, historical game trends, time management patterns, phase-based performance.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-8</div><div class="fr-text"><strong>Conversational Memory</strong> â€” Persistent memory across sessions: every coaching conversation writes pattern facts and interview summaries into the coach's memory store, retrievable later and visible to the player ("What your coach knows"). The coach maintains rolling thread summaries so long conversations retain context without silent truncation.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-9</div><div class="fr-text"><strong>Actionable Recommendations</strong> â€” Specific and actionable; drills the coach saves surface in the Training artifact collection with plan progress tracking.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-12</div><div class="fr-text"><strong>Recall Honesty</strong> â€” When asked what was discussed before, the coach answers only from its records; if something is absent it says so plainly rather than inventing it.</div></div>
+
+    <h4 class="sub-sub-heading">3.10.4 Explanation Quality</h4>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-10</div><div class="fr-text"><strong>Human-Readable Explanations</strong> â€” Conversational language (not notation-heavy); analogies and conceptual explanations; depth adapted to user skill level.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-11</div><div class="fr-text"><strong>Evidence-Based Coaching</strong> â€” Cite specific evidence ("In 12 similar positionsâ€¦"); show statistics; reference patterns by confidence level.</div></div>
   </section>
-
   <!-- Section 4 -->
   <section class="section-block">
     <div id="s4" class="section-anchor"></div>
