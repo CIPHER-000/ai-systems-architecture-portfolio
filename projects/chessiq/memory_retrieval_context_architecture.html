@@ -811,6 +811,51 @@ CREATE TABLE chat_summaries (
       <span class="callout-label">Why This Separation Matters</span>
       <p>User can have 1000+ messages, but only top 5 <em>relevant</em> memories get injected into the LLM context. Sending full conversation history would consume the entire context window and degrade response quality.</p>
     </div>
+
+    <h3 class="sub-heading">7.4 As-Built Chat Memory Pipeline (2026-09)</h3>
+    <p>The sections above sketch the original design. The shipped pipeline (2026-09) implements the same summarize-then-embed doctrine with two deliberate divergences: <strong>no importance filtering</strong> (every completed exchange becomes a memory — deterministic ids keep re-runs idempotent), and <strong>breakthrough / recurring-struggle detection is deferred</strong>.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-text">After every coaching exchange:
+  1. process_message persists the exchange (Postgres source of truth)
+  2. fire-and-forget schedule call (TESTING-guarded, exception-safe)
+  3. Redis SET NX debounce per session (TTL 300s, 30s countdown)
+     -> Celery 'analysis' queue -> extract_chat_memories_task
+
+  The task runs two idempotent jobs:
+  A. Exchange memories (sync_session_chat_memories)
+     each user/assistant pair -> ONE dated memory sentence
+     "Coaching exchange (YYYY-MM-DD). Player asked: ... | Coach: ..."
+     upserted into semantic_memory['coaching'] keyed by
+     md5(session_id + ":" + user_message_index)
+     only new exchanges are embedded (Gemini gemini-embedding-001, 768 dims)
+  B. Rolling thread summary (sync_session_thread_summary)
+     messages older than the 7-message LLM window are folded into a stored
+     summary (context_json.early_summary / summary_upto)
+     one incremental LLM call per run, only when new out-of-window messages
+     exist; factual, under 250 words</code></pre>
+    </div>
+
+    <p><strong>Context layers injected into every coach LLM call</strong> (system prompt, in order):</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Layer</th><th>Covers</th><th>Injected when</th></tr></thead>
+        <tbody>
+          <tr><td>Player Context + Relevant Semantic Memories</td><td>Similarity matches from the full memory store</td><td>Every call (small talk / unknown skip retrieval)</td></tr>
+          <tr><td>Thread Summary</td><td>Everything older than the 7-message window, compressed</td><td>Every call, once a summary exists</td></tr>
+          <tr><td>Conversation Record</td><td>Earliest exchanges + "Earliest player message" headline</td><td>Every call; recall-flagged questions additionally get the full dated player-message chronology (last 60 entries)</td></tr>
+          <tr><td>Recent window</td><td>Last 7 messages, verbatim</td><td>Every call</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout secondary">
+      <span class="callout-label">Recall Is Baseline, Not a Question Shape</span>
+      <p>Every retrieval-eligible question searches the FULL memory store — <code class="inline">["pattern", "coaching"]</code> — with the limit scaled to <code class="inline">5 + 3 × (slices − 1)</code> (8 when both are searched). Similarity alone decides what surfaces; keywords never gate <em>what</em> is searched, they only enable the chronology grounding. A standing recall-honesty rule restricts "what did I say / first message" answers to the visible history, Conversation Record, and retrieved memories — never the coach's own lines or memory summaries. "What was the first message I sent" is additionally answered deterministically from the session record (no LLM, no retrieval).</p>
+    </div>
+    <div class="callout warning">
+      <span class="callout-label">LLM Reliability Substrate</span>
+      <p>Every coach and summary call treats empty completions as provider failures (per-provider retries, then chain failover local → openrouter → openai), sends <code class="inline">x-opencode-session</code> when configured (OpenCode Go returns 400s or degraded/empty completions without it), and — per product directive — returns an honest "can't reach my language-model service" reply on failure. All canned response templates were removed; the coach never fabricates an answer.</p>
+    </div>
   </section>
 
   <!-- Section 8 -->
@@ -1093,3 +1138,4 @@ WHERE last_seen_at > NOW() - INTERVAL '90 days';</code></pre>
 <script src="../../assets/scripts/doc-suite.js"></script>
 </body>
 </html>
+
