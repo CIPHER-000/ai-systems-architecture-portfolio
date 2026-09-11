@@ -183,7 +183,7 @@ body.portfolio-body::before {
   width: 100%;
 }
 
-.project-card--chessiq .project-card-accent {
+.project-card--chessrun .project-card-accent {
   background: linear-gradient(90deg, #84FF00, #69f6b8);
 }
 
@@ -204,7 +204,7 @@ body.portfolio-body::before {
   display: block;
 }
 
-.project-card--chessiq .project-card-tag { color: #84FF00; }
+.project-card--chessrun .project-card-tag { color: #84FF00; }
 .project-card--momenta .project-card-tag { color: #a76353; }
 
 .project-card-name {
@@ -270,12 +270,12 @@ body.portfolio-body::before {
   transition: background 0.15s, color 0.15s;
 }
 
-.project-card--chessiq .project-card-link {
+.project-card--chessrun .project-card-link {
   color: #0a0f14;
   background: #84FF00;
 }
 
-.project-card--chessiq .project-card-link:hover {
+.project-card--chessrun .project-card-link:hover {
   background: #9dff33;
 }
 

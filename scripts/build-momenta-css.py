@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-src = (ROOT / "projects/chessiq/shared.css").read_text(encoding="utf-8")
+src = (ROOT / "projects/chessrun/shared.css").read_text(encoding="utf-8")
 layout = src.split("/* ── Reset")[1]
 
 momenta_root = """/* Momenta Document Suite — shared.css */
