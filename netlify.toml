@@ -1,2 +1,9 @@
 [build]
   publish = "."
+
+# Rebrand redirect: ChessIQ project path renamed to ChessRun.
+[[redirects]]
+  from = "/projects/chessiq/*"
+  to = "/projects/chessrun/:splat"
+  status = 301
+  force = false
