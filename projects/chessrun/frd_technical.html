@@ -41,7 +41,8 @@
     <li class="toc-item"><a href="#s12" class="toc-link"><span class="toc-num">12</span>API Specification</a></li>
     <li class="toc-item"><a href="#s13" class="toc-link"><span class="toc-num">13</span>Testing Strategy</a></li>
     <li class="toc-item"><a href="#s14" class="toc-link"><span class="toc-num">14</span>Failure Modes</a></li>
-    <li class="toc-item"><a href="#s15" class="toc-link"><span class="toc-num">15</span>Summary</a></li>
+    <li class="toc-item"><a href="#s15" class="toc-link"><span class="toc-num">15</span>Substrate Refinements</a></li>
+    <li class="toc-item"><a href="#s16" class="toc-link"><span class="toc-num">16</span>Summary</a></li>
   </ul>
 </nav>
 
@@ -60,6 +61,7 @@
     <span class="doc-current">Technical FRD</span>
     <a href="ai_model_strategy.html">AI Model Strategy</a>
     <a href="memory_retrieval_context_architecture.html">Memory &amp; Retrieval</a>
+    <a href="player_intelligence_architecture.html">Player Intelligence</a>
     <a href="pricing_monetization_strategy.html">Pricing</a>
   </nav>
 </div>
@@ -456,21 +458,26 @@ for move_number, move in enumerate(game.mainline_moves(), start=1):
     <h3 class="sub-heading">4.2.3 Move Quality Classification</h3>
     <div class="table-wrapper">
       <table>
-        <thead><tr><th>Classification</th><th>Eval Delta (centipawns)</th></tr></thead>
+        <thead><tr><th>Classification</th><th>Centipawn loss</th></tr></thead>
         <tbody>
-          <tr><td><span class="severity-badge critical">Blunder</span></td><td>≥ 200 cp or losing forced mate</td></tr>
-          <tr><td><span class="severity-badge significant">Mistake</span></td><td>≥ 100 cp</td></tr>
-          <tr><td><span class="severity-badge developing">Inaccuracy</span></td><td>≥ 50 cp</td></tr>
-          <tr><td>Good</td><td>Otherwise</td></tr>
+          <tr><td><span class="severity-badge">Best</span></td><td>the engine's own choice, or no measurable loss</td></tr>
+          <tr><td>Excellent</td><td>≤ 25 cp</td></tr>
+          <tr><td>Good</td><td>≤ 50 cp</td></tr>
+          <tr><td><span class="severity-badge developing">Inaccuracy</span></td><td>&gt; 50 cp</td></tr>
+          <tr><td><span class="severity-badge significant">Mistake</span></td><td>&gt; 100 cp</td></tr>
+          <tr><td><span class="severity-badge critical">Blunder</span></td><td>&gt; 300 cp, or a lost forced mate</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Where <code class="inline">eval_delta = eval_after_best - eval_after_user</code> (engine POV).</p>
+    <p>The loss for a move is <code class="inline">cp_loss = max(0, eval_before − eval_after)</code>, measured in the <em>mover's own frame</em>: <code class="inline">eval_before</code> is the evaluation of the position the mover was facing.</p>
+    <p><strong>Why the frame matters.</strong> <code class="inline">Score.pov(board.turn)</code> is relative to the side to move, so the frame alternates every ply: the evaluation taken after a move is the <em>opponent's</em> view. Comparing two consecutive evaluations without converting them therefore reads a stable advantage as a large loss — a level position that nobody is losing can look like a blunder on every ply. The loss is clamped at zero because a move that improves the evaluation cannot be a loss, and mate scores are bounded rather than left unbounded so a single decisive position cannot swamp an average.</p>
+    <p>Comparing the <em>played</em> move against the <em>best</em> move (<code class="inline">eval_before(best) − eval_before(played)</code>) remains an open refinement; the shipped metric is the eval drop attributable to the move itself.</p>
 
     <h3 class="sub-heading">4.2.4 ACPL &amp; Accuracy</h3>
     <ul>
-      <li><strong>ACPL</strong> = average of <code class="inline">abs(eval_after_user - eval_before)</code> across all user moves</li>
-      <li><strong>Accuracy</strong> mapping: ACPL &lt;20 → 95–100 · 20–50 → 80–95 · 50–100 → 60–80 · &gt;100 → &lt;60</li>
+      <li><strong>ACPL</strong> = mean of <code class="inline">cp_loss</code> over the user's moves — clamped at zero, in the mover's own frame</li>
+      <li><strong>Accuracy</strong> mapping (piecewise linear): ACPL &lt;10 → 99 · 10–20 → 95–99 · 20–50 → 80–95 · 50–100 → 60–80 · ≥100 → ≤60</li>
+      <li><strong>Provenance</strong>: the same per-move loss is persisted to the move-facts layer, so every average the coach quotes can be traced back to the engine evaluation of one move</li>
     </ul>
 
     <h3 class="sub-heading">4.2.5 Phase-Based Metrics</h3>
@@ -1242,6 +1249,40 @@ flowchart TB
     <div id="s15" class="section-anchor"></div>
     <div class="section-heading">
       <span class="section-ghost-num">15</span>
+      <h2 class="section-title">Substrate Refinements</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>The sections above describe the engine pass and its consumers. The substrate underneath them has since been made explicit, so that every claim the coach makes can be traced back to one engine evaluation of one move. The full record lives in <a href="player_intelligence_architecture.html">Player Intelligence Architecture</a>.</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Layer</th><th>Refinement</th></tr></thead>
+        <tbody>
+          <tr><td>Move facts</td><td>One row per ply: position identity, structure key, material balance, phase, the mover's own <code class="inline">cp_loss</code>, and the engine's best move for the position the mover actually faced</td></tr>
+          <tr><td>Chess events</td><td>The decisions that mattered, detected deterministically behind a minimum-opportunity gate — no model involved</td></tr>
+          <tr><td>Patterns</td><td>Occurrence-backed: each pattern carries the games, plies and engine evidence behind it</td></tr>
+          <tr><td>Player model</td><td>Longitudinal profile built from analysis rows and patterns, with behavioural hypotheses derived from decisions rather than self-report</td></tr>
+          <tr><td>Retrieval</td><td>Similar historical games and decisions surface precedent for the position under discussion</td></tr>
+          <tr><td>Coaching context</td><td>Ranked evidence assembled per question; pattern claims reach the model without severity vocabulary it should never repeat</td></tr>
+          <tr><td>Evaluation</td><td>Probe-based harness scoring grounding, pattern assertions and engine-vocabulary leakage against the real coach prompt — the gate that decides whether fine-tuning is justified at all</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-heading">Corrections that changed what the player sees</h3>
+    <ul>
+      <li><strong>Accuracy and ACPL.</strong> Both were derived from evaluations compared across opposite frames (§4.2.3), which inflated ACPL roughly fourfold — up to thirty-fivefold in the worst game — and reported single-digit accuracy for games that were played well. The metric is now the mover-frame loss, and stored analyses were rebuilt from the move-facts layer without re-running the engine.</li>
+      <li><strong>Honest counts.</strong> A Chess.com record stored without a single move (an aborted game) can never be analysed. It is now excluded from the queue, never retried, and reported separately, instead of silently shrinking the analysed count on screen.</li>
+      <li><strong>Liveness versus readiness.</strong> The endpoint that decides whether an instance stays alive no longer probes Postgres or Redis. Dependency checks moved to a separate readiness path, so a slow dependency can no longer evict a healthy instance and break every in-flight request.</li>
+    </ul>
+  </section>
+
+  <!-- Section 16 -->
+  <section class="section-block">
+    <div id="s16" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">16</span>
       <h2 class="section-title">Summary</h2>
     </div>
     <div class="section-divider"></div>
