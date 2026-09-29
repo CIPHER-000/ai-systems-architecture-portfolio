@@ -32,14 +32,16 @@
     <li class="toc-item"><a href="#s3" class="toc-link"><span class="toc-num">3</span>Functional Requirements</a></li>
     <li class="toc-item toc-sub"><a href="#s3-1" class="toc-link"><span class="toc-num">3.1</span>Authentication</a></li>
     <li class="toc-item toc-sub"><a href="#s3-2" class="toc-link"><span class="toc-num">3.2</span>Game Fetching</a></li>
-    <li class="toc-item toc-sub"><a href="#s3-3" class="toc-link"><span class="toc-num">3.3</span>Dashboard — Fetched Games</a></li>
-    <li class="toc-item toc-sub"><a href="#s3-4" class="toc-link"><span class="toc-num">3.4</span>Dashboard — Analysis &amp; Insights</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-3" class="toc-link"><span class="toc-num">3.3</span>Coaching Workspace — Analyze Games</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-4" class="toc-link"><span class="toc-num">3.4</span>Playing Profile</a></li>
     <li class="toc-item toc-sub"><a href="#s3-5" class="toc-link"><span class="toc-num">3.5</span>Coaching / Recommendations</a></li>
     <li class="toc-item toc-sub"><a href="#s3-6" class="toc-link"><span class="toc-num">3.6</span>Analysis Workflow</a></li>
-    <li class="toc-item toc-sub"><a href="#s3-7" class="toc-link"><span class="toc-num">3.7</span>Training Mode</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-7" class="toc-link"><span class="toc-num">3.7</span>Future Training Mode</a></li>
     <li class="toc-item toc-sub"><a href="#s3-8" class="toc-link"><span class="toc-num">3.8</span>Pattern Recognition Engine</a></li>
     <li class="toc-item toc-sub"><a href="#s3-9" class="toc-link"><span class="toc-num">3.9</span>Move Timing &amp; Clock Analysis</a></li>
     <li class="toc-item toc-sub"><a href="#s3-10" class="toc-link"><span class="toc-num">3.10</span>AI Coach Interface</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-11" class="toc-link"><span class="toc-num">3.11</span>Dashboard — Fetched Games</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-12" class="toc-link"><span class="toc-num">3.12</span>Dashboard — Analysis &amp; Insights</a></li>
     <li class="toc-item"><a href="#s4" class="toc-link"><span class="toc-num">4</span>Non-Functional Requirements</a></li>
     <li class="toc-item"><a href="#s5" class="toc-link"><span class="toc-num">5</span>UX &amp; Interaction Notes</a></li>
     <li class="toc-item"><a href="#s6" class="toc-link"><span class="toc-num">6</span>Flow Diagrams</a></li>
@@ -82,6 +84,12 @@
     <div id="s1-1"></div>
     <h3 class="sub-heading">1.1 Vision</h3>
     <p>ChessRun is an <strong>AI-powered personalized chess intelligence and coaching platform</strong> that transforms how players improve at chess. Unlike traditional game analyzers that provide one-off engine evaluations, ChessRun builds a comprehensive understanding of each player's unique patterns, tendencies, and developmental needs across their entire game history.</p>
+    <p>More precisely, ChessRun is an <strong>AI chess coach</strong> that uses game analysis to personalize coaching conversations. It builds a concise <strong>Playing Profile</strong> from a player's games and uses that context to guide a persistent coaching conversation.</p>
+
+    <div class="callout secondary">
+      <span class="callout-label">MVP direction</span>
+      <p><code class="inline">CHESSRUN_MVP_UX.md</code> is the canonical product definition for the current launch scope. ChessRun is an AI chess coach whose primary interface is conversation. Dashboard, report, and training-mode concepts in this FRD are future-facing unless explicitly described in the MVP UX document.</p>
+    </div>
 
     <div class="table-wrapper">
       <table>
@@ -124,7 +132,27 @@
     <ul>
       <li>Natural language Q&amp;A about player patterns and games</li>
       <li>Personalized improvement recommendations and context-aware coaching</li>
+      <li>Conversational exploration of player strengths and weaknesses</li>
+      <li>Persistent coaching threads where prior context can be restored</li>
+      <li>Pattern-aware starter suggestions and follow-up questions</li>
       <li>Interactive drill and study suggestions</li>
+    </ul>
+
+    <h4 class="sub-sub-heading">Playing Profile</h4>
+    <ul>
+      <li>Collapsible coaching context panel</li>
+      <li>Games analyzed</li>
+      <li>Patterns identified</li>
+      <li>Strongest area</li>
+      <li>Biggest bottleneck</li>
+      <li>Last analysis timestamp</li>
+    </ul>
+
+    <h4 class="sub-sub-heading">Future Training Mode</h4>
+    <ul>
+      <li>Pattern-specific drills based on recurring weaknesses</li>
+      <li>Critical moment replay with coaching context</li>
+      <li>Personalized study plans based on pattern analysis</li>
     </ul>
   </section>
 
@@ -159,6 +187,17 @@
       <li>Sees summary of performance and last analyzed period</li>
       <li>Can sync new games, re-analyze, or enter Training Mode</li>
     </ol>
+
+    <div class="callout info">
+      <span class="callout-label">MVP journey direction</span>
+      <p>In the current MVP direction the first-time flow is: enter a Chess.com or Lichess username, click <strong>Start Coaching</strong>, and land directly in the AI Coaching Interface. The coach welcomes the user and explains that game analysis can build a personalized <strong>Playing Profile</strong>; the user opens the <strong>Analyze Games</strong> modal, selects a timeframe, and analysis runs in the background while the conversation remains available. When analysis completes, the <strong>Playing Profile</strong> updates and the coach starts a personalized coaching conversation around one high-impact pattern.</p>
+      <ul>
+        <li>Returning players land directly in the coaching workspace.</li>
+        <li>They can start a new chat or reopen previous coaching conversations from the sidebar.</li>
+        <li>They can reopen <strong>Analyze Games</strong> from the sidebar or mobile menu.</li>
+        <li>The <strong>Playing Profile</strong> remains persistent and collapsible.</li>
+      </ul>
+    </div>
   </section>
 
   <!-- Section 3 -->
@@ -186,17 +225,36 @@
     <div class="fr-item"><div class="fr-id">FR-GAMES-4</div><div class="fr-text">Backend ensures idempotent storage (no duplicate games per <code class="inline">user_id</code> + external game id).</div></div>
 
     <div id="s3-3"></div>
-    <h3 class="sub-heading">3.3 Dashboard — Fetched Games</h3>
-    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-1</div><div class="fr-text">Dashboard displays "Fetched Games" section with title and <code class="inline">{N} games</code> subtext.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-2</div><div class="fr-text">Each game card shows: opponent username, result (Win/Loss/Draw with icon), time control, rated/unrated, date/time, Chess.com link, badge (<code class="inline">Not analyzed</code> or <code class="inline">Analyzed</code>).</div></div>
-    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-3</div><div class="fr-text">Section is <strong>collapsible</strong> (default expanded). Clicking header toggles state.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-4</div><div class="fr-text">Top-right "Analyze All Games" button — disabled if analysis is running or all games already analyzed.</div></div>
+    <h3 class="sub-heading">3.3 Coaching Workspace — Analyze Games</h3>
+    <p>Analysis is requested from inside the coaching workspace. <strong>Analyze Games</strong> opens as a modal over the conversation, so the chat stays the primary surface and the user is never taken away from it.</p>
+    <div class="fr-item"><div class="fr-id">FR-ANALYZE-1</div><div class="fr-text">Analyze Games is <strong>always a modal overlay, never a standalone page</strong>.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-ANALYZE-2</div><div class="fr-text">The modal offers:
+      <ul>
+        <li>Last 7 Days</li>
+        <li>Last 30 Days</li>
+        <li>This Month</li>
+        <li>Analyze All Games</li>
+        <li>Custom Range</li>
+      </ul>
+    </div></div>
+    <div class="fr-item"><div class="fr-id">FR-ANALYZE-3</div><div class="fr-text">Click <strong>Analyze Games</strong> to open the modal. Click <strong>Cancel</strong> or outside the modal to close it. Clicking <strong>Analyze Games</strong> again reopens it.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-ANALYZE-4</div><div class="fr-text">Desktop keeps <strong>Analyze Games</strong> visible in the sidebar. Mobile exposes it through a menu or sync action.</div></div>
 
     <div id="s3-4"></div>
-    <h3 class="sub-heading">3.4 Dashboard — Analysis Summary &amp; Insights</h3>
-    <div class="fr-item"><div class="fr-id">FR-ANALYSIS-1</div><div class="fr-text">Summary panel: total games analyzed, overall accuracy metric (0–100), Win/Draw/Loss distribution, ACPL trend or period comparison.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-ANALYSIS-2</div><div class="fr-text">Phase-based breakdown: Opening, Middlegame, Endgame scores (0–100 or A–E) with phase-level blunder/mistake/inaccuracy counts.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-ANALYSIS-3</div><div class="fr-text">Move-quality chart (pie or stacked bar): Best, Excellent, Good, Inaccuracy, Mistake, Blunder.</div></div>
+    <h3 class="sub-heading">3.4 Playing Profile</h3>
+    <p>The <strong>Playing Profile</strong> is the collapsible coaching-context panel of the coaching workspace. It is what the coach reads from and what the player can always check: a concise, persistent summary of the player, deliberately written as a scouting report rather than a statistics dashboard.</p>
+    <div class="fr-item"><div class="fr-id">FR-PROFILE-1</div><div class="fr-text">Rename <strong>Player Intelligence Profile</strong> to <strong>Playing Profile</strong>.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-PROFILE-2</div><div class="fr-text">Playing Profile is <strong>persistent across coaching sessions</strong> and <strong>collapsible</strong> in the coaching workspace.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-PROFILE-3</div><div class="fr-text">Playing Profile summarizes:
+      <ul>
+        <li>Games Analyzed</li>
+        <li>Patterns Identified</li>
+        <li>Strongest Area</li>
+        <li>Biggest Bottleneck</li>
+        <li>Last Analysis Timestamp</li>
+      </ul>
+    </div></div>
+    <div class="fr-item"><div class="fr-id">FR-PROFILE-4</div><div class="fr-text">Playing Profile should read like a <strong>coach's scouting report</strong>, not a statistics dashboard.</div></div>
 
     <div id="s3-5"></div>
     <h3 class="sub-heading">3.5 Coaching / Recommendations</h3>
@@ -206,22 +264,61 @@
      <h3 class="sub-heading">3.5.1 Weekly Coaching Loop</h3>
     <div class="fr-item"><div class="fr-id">FR-DIGEST-1</div><div class="fr-text">Every week (automatically, post-analysis), the coach compiles a digest of what changed and what deserves focus, grounded in that week's pattern facts and drills completed.</div></div>
     <div class="fr-item"><div class="fr-id">FR-DIGEST-2</div><div class="fr-text">Digests surface in-app in the Weekly Coaching Loop feed with unread state and mark-as-read; email delivery is optional and separately controlled.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-DIGEST-3</div><div class="fr-text">The loop closes: digest â†’ focus areas â†’ coach-authored drills â†’ next week's digest reports on drill completion.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-DIGEST-3</div><div class="fr-text">The loop closes: digest → focus areas → coach-authored drills → next week's digest reports on drill completion.</div></div>
 <div id="s3-6"></div>
     <h3 class="sub-heading">3.6 Analysis Workflow</h3>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-1</div><div class="fr-text">"Analyze All Games" → frontend calls backend endpoint → backend queues Celery jobs for unanalyzed games → frontend shows modal with queued count.</div></div>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-2</div><div class="fr-text">Frontend periodically polls summary/games status until all queued games show <code class="inline">is_analyzed = true</code> or timeout/max polling hits.</div></div>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-3</div><div class="fr-text">On completion: modal closes, dashboard summary and game list update, toast notification fires.</div></div>
+    <p>In the MVP direction, completion also refreshes the <strong>Playing Profile</strong> automatically and the coach sends a conversational follow-up focused on one high-impact pattern — the conversation, not a report screen, remains the primary surface for interpreting the results.</p>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-4</div><div class="fr-text">"Re-analyze" button for advanced users forces recompute of previously analyzed games.</div></div>
+    <h4 class="sub-sub-heading">3.6.1 Auto-Analysis (Premium Feature)</h4>
+    <p>Auto-analysis is the always-on form of the workflow above: once a Pro/Elite user opts in, ChessRun keeps fetching, analyzing and profiling in the background without a manual click.</p>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-5</div><div class="fr-text"><span class="badge badge-premium">Premium</span> Pro/Elite users can enable <strong>automatic background analysis</strong>: periodic Chess.com game fetching, auto-queue for Stockfish, incremental profile updates.</div></div>
     <div class="fr-item"><div class="fr-id">FR-WORKFLOW-6</div><div class="fr-text"><span class="badge badge-premium">Premium</span> Auto-analysis generates scheduled reports (daily/weekly coaching summary) delivered as in-app notifications and optionally via email.</div></div>
+    <ul>
+      <li><strong>Fetch interval:</strong> recent Chess.com games are pulled on a configurable schedule — for example daily or weekly</li>
+      <li><strong>Automatic pattern pass:</strong> pattern recognition runs as soon as analysis completes, and the player profile is updated incrementally</li>
+      <li><strong>Digest contents:</strong> newly detected patterns, accuracy trends, and opening performance changes</li>
+      <li><strong>Purpose:</strong> drive retention, maintain habit loops, and keep AI memory continuously updated without requiring manual user action</li>
+    </ul>
+    <div class="callout info">
+      <span class="callout-label">Non-MVP note</span>
+      <p>Scheduled reports are future-facing. The MVP should keep analysis output inside coaching conversations.</p>
+    </div>
 
-     <div id="s3-7"></div>
-    <h3 class="sub-heading">3.7 Training Artifacts</h3>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-1</div><div class="fr-text">The coach (in Coach or Interview mode) saves drills and training plans focused on the player's detected patterns; everything saved surfaces in the player's Training collection.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-2</div><div class="fr-text">Active plan view: title, focus areas (from the interview baseline and pattern profile), and a progress bar over the plan's drill set.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-3</div><div class="fr-text">Drill workflow: start a drill, record the attempt (optional answer, solved / missed), or skip; plan counters sync automatically and plans complete when their drills do.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-TRAIN-4</div><div class="fr-text">Progress rollups: all-time attempts and success by drill type, plus per-plan completion â€” the coach uses the same data to adjust future plans.</div></div>
+    <div id="s3-7"></div>
+    <h3 class="sub-heading">3.7 Future Training Mode</h3>
+    <p>Training Mode turns detected patterns into practice. It is <strong>not part of the ChessRun MVP</strong>: the backend and domain ideas are preserved for future planning, but drill UX and the training-plan lifecycle do not block launch.</p>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-0</div><div class="fr-text">Training mode is not part of the ChessRun MVP. Preserve backend/domain ideas for future planning, but do not block MVP launch on drill UX or training-plan lifecycle.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-1</div><div class="fr-text">In a future release, the user can enter Training Mode from:
+      <ul>
+        <li>Game row ("Train this game")</li>
+        <li>Insight card ("Practice rook endgames")</li>
+      </ul>
+    </div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-2</div><div class="fr-text">Training mode includes:
+      <ul>
+        <li>Interactive board</li>
+        <li>Move list</li>
+        <li>Engine evaluation bar (optional for MVP)</li>
+      </ul>
+    </div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-3</div><div class="fr-text">Drill behavior for critical moments:
+      <ul>
+        <li>Board shows the position just before the user's mistake</li>
+        <li>The user is prompted to choose the best move</li>
+        <li>On a correct move: show confirmation and explanation, then proceed</li>
+        <li>On an incorrect move: show feedback and the engine's best move, then allow a retry</li>
+      </ul>
+    </div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAIN-4</div><div class="fr-text">Training stats: track the number of drills attempted and the success rate by theme.</div></div>
+
+    <h4 class="sub-sub-heading">3.7.1 Training Artifacts</h4>
+    <div class="fr-item"><div class="fr-id">FR-TRAINART-1</div><div class="fr-text">The coach (in Coach or Interview mode) saves drills and training plans focused on the player's detected patterns; everything saved surfaces in the player's Training collection.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAINART-2</div><div class="fr-text">Active plan view: title, focus areas (from the interview baseline and pattern profile), and a progress bar over the plan's drill set.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAINART-3</div><div class="fr-text">Drill workflow: start a drill, record the attempt (optional answer, solved / missed), or skip; plan counters sync automatically and plans complete when their drills do.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-TRAINART-4</div><div class="fr-text">Progress rollups: all-time attempts and success by drill type, plus per-plan completion — the coach uses the same data to adjust future plans.</div></div>
 <div id="s3-8"></div>
     <h3 class="sub-heading">3.8 Pattern Recognition Engine</h3>
     <p>The Pattern Recognition Engine is the <strong>intelligence layer</strong> that transforms individual game analyses into personalized coaching insights. It operates on the principle of <strong>longitudinal analysis</strong> — identifying recurring patterns across many games.</p>
@@ -269,31 +366,45 @@
 
      <div id="s3-10"></div>
     <h3 class="sub-heading">3.10 AI Coach / Conversational Interface</h3>
-    <p>The AI Coach is a <strong>primary interface</strong> of ChessRun â€” not an add-on, but a core way users interact with their chess intelligence.</p>
+    <p>The AI Coach is a <strong>primary interface</strong> of ChessRun — not an add-on, but a core way users interact with their chess intelligence.</p>
+    <p>The coach should never dump analysis results. It should identify one high-impact improvement opportunity and begin a conversation around it.</p>
 
-    <h4 class="sub-sub-heading">3.10.1 Three Conversation Modes</h4>
+    <h4 class="sub-sub-heading">Three Conversation Modes</h4>
     <p>Every coaching conversation runs in one of three modes, selected when the conversation starts:</p>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-0a</div><div class="fr-text"><strong>Coach mode (default)</strong> â€” grounded improvement conversation about the player's patterns, games, and goals.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-0b</div><div class="fr-text"><strong>Analyze mode</strong> â€” position-focused technical analysis; the user pastes a FEN and receives an answer built only on engine facts, never an estimated evaluation.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-0b</div><div class="fr-text"><strong>Interview mode</strong> â€” a structured baseline intake: the coach asks short, single questions covering the rating goal, the self-perceived weakness, the weekly time budget, and the openings; the completed profile is saved to the coach's memory and becomes the player's focus areas. The interview never invents facts to fill a gap.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-0a</div><div class="fr-text"><strong>Coach mode (default)</strong> — grounded improvement conversation about the player's patterns, games, and goals.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-0b</div><div class="fr-text"><strong>Analyze mode</strong> — position-focused technical analysis; the user pastes a FEN and receives an answer built only on engine facts, never an estimated evaluation.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-0b</div><div class="fr-text"><strong>Interview mode</strong> — a structured baseline intake: the coach asks short, single questions covering the rating goal, the self-perceived weakness, the weekly time budget, and the openings; the completed profile is saved to the coach's memory and becomes the player's focus areas. The interview never invents facts to fill a gap.</div></div>
 
-    <h4 class="sub-sub-heading">3.10.2 Conversational Capabilities</h4>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-1</div><div class="fr-text"><strong>Pattern-Based Questions</strong> â€” "Why do I keep blundering in the middlegame?", "What openings fit my style?", "How has my play changed over the last 3 months?"</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-2</div><div class="fr-text"><strong>Specific Game Questions</strong> â€” "Why was move 18 a mistake?", "Was I winning at any point?", "Why did I spend 5 minutes and still blunder here?"</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-3</div><div class="fr-text"><strong>Comparative Analysis</strong> â€” "How does my blitz compare to rapid?", "Do I play better as White or Black?", "Am I improving in tactics?"</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-4</div><div class="fr-text"><strong>Improvement Planning</strong> â€” "Create a training plan for my endgame weaknesses", "Recommend drills for my knight fork problem."</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-5</div><div class="fr-text"><strong>Opening &amp; Repertoire Guidance</strong> â€” "What opening should I play against 1.e4?", "Is the Sicilian right for me?"</div></div>
+    <h4 class="sub-sub-heading">3.10.1 Conversational Capabilities</h4>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-1</div><div class="fr-text"><strong>Pattern-Based Questions</strong> — "Why do I keep blundering in the middlegame?", "What openings fit my style?", "How has my play changed over the last 3 months?"</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-2</div><div class="fr-text"><strong>Specific Game Questions</strong> — "Why was move 18 a mistake?", "Was I winning at any point?", "Why did I spend 5 minutes and still blunder here?"</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-3</div><div class="fr-text"><strong>Comparative Analysis</strong> — "How does my blitz compare to rapid?", "Do I play better as White or Black?", "Am I improving in tactics?"</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-4</div><div class="fr-text"><strong>Improvement Planning</strong> — "Create a training plan for my endgame weaknesses", "Recommend drills for my knight fork problem."</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-5</div><div class="fr-text"><strong>Opening &amp; Repertoire Guidance</strong> — "What opening should I play against 1.e4?", "Is the Sicilian right for me?"</div></div>
 
-    <h4 class="sub-sub-heading">3.10.3 AI Coach Intelligence Requirements</h4>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-6</div><div class="fr-text"><strong>Context-Aware Responses</strong> â€” Must reference the player's actual patterns and data; include specific examples from the player's games; avoid generic advice.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-7</div><div class="fr-text"><strong>Multi-Source Intelligence</strong> â€” Synthesizes: Pattern Engine outputs, Stockfish findings, historical game trends, time management patterns, phase-based performance.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-8</div><div class="fr-text"><strong>Conversational Memory</strong> â€” Persistent memory across sessions: every coaching conversation writes pattern facts and interview summaries into the coach's memory store, retrievable later and visible to the player ("What your coach knows"). The coach maintains rolling thread summaries so long conversations retain context without silent truncation.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-9</div><div class="fr-text"><strong>Actionable Recommendations</strong> â€” Specific and actionable; drills the coach saves surface in the Training artifact collection with plan progress tracking.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-12</div><div class="fr-text"><strong>Recall Honesty</strong> â€” When asked what was discussed before, the coach answers only from its records; if something is absent it says so plainly rather than inventing it.</div></div>
+    <h4 class="sub-sub-heading">3.10.2 AI Coach Intelligence Requirements</h4>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-6</div><div class="fr-text"><strong>Context-Aware Responses</strong> — Must reference the player's actual patterns and data; include specific examples from the player's games; avoid generic advice.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-7</div><div class="fr-text"><strong>Multi-Source Intelligence</strong> — Synthesizes: Pattern Engine outputs, Stockfish findings, historical game trends, time management patterns, phase-based performance.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-8</div><div class="fr-text"><strong>Conversational Memory</strong> — Persistent memory across sessions: every coaching conversation writes pattern facts and interview summaries into the coach's memory store, retrievable later and visible to the player ("What your coach knows"). The coach maintains rolling thread summaries so long conversations retain context without silent truncation.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-9</div><div class="fr-text"><strong>Actionable Recommendations</strong> — Specific and actionable; drills the coach saves surface in the Training artifact collection with plan progress tracking.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-12</div><div class="fr-text"><strong>Recall Honesty</strong> — When asked what was discussed before, the coach answers only from its records; if something is absent it says so plainly rather than inventing it.</div></div>
 
-    <h4 class="sub-sub-heading">3.10.4 Explanation Quality</h4>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-10</div><div class="fr-text"><strong>Human-Readable Explanations</strong> â€” Conversational language (not notation-heavy); analogies and conceptual explanations; depth adapted to user skill level.</div></div>
-    <div class="fr-item"><div class="fr-id">FR-AICOACH-11</div><div class="fr-text"><strong>Evidence-Based Coaching</strong> â€” Cite specific evidence ("In 12 similar positionsâ€¦"); show statistics; reference patterns by confidence level.</div></div>
+    <h4 class="sub-sub-heading">3.10.3 Explanation Quality</h4>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-10</div><div class="fr-text"><strong>Human-Readable Explanations</strong> — Conversational language (not notation-heavy); analogies and conceptual explanations; depth adapted to user skill level.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-AICOACH-11</div><div class="fr-text"><strong>Evidence-Based Coaching</strong> — Cite specific evidence ("In 12 similar positions…"); show statistics; reference patterns by confidence level.</div></div>
+    <div id="s3-11"></div>
+    <h3 class="sub-heading">3.11 Dashboard — Fetched Games</h3>
+    <p>The dashboard views in this subsection describe the report-style surface of the product. In the MVP direction these dashboard concepts are future-facing, with the coaching workspace as the primary interface.</p>
+    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-1</div><div class="fr-text">Dashboard displays "Fetched Games" section with title and <code class="inline">{N} games</code> subtext.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-2</div><div class="fr-text">Each game card shows: opponent username, result (Win/Loss/Draw with icon), time control, rated/unrated, date/time, Chess.com link, badge (<code class="inline">Not analyzed</code> or <code class="inline">Analyzed</code>).</div></div>
+    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-3</div><div class="fr-text">Section is <strong>collapsible</strong> (default expanded). Clicking header toggles state.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-DASH-GAMES-4</div><div class="fr-text">Top-right "Analyze All Games" button — disabled if analysis is running or all games already analyzed.</div></div>
+
+    <div id="s3-12"></div>
+    <h3 class="sub-heading">3.12 Dashboard — Analysis Summary &amp; Insights</h3>
+    <div class="fr-item"><div class="fr-id">FR-ANALYSIS-1</div><div class="fr-text">Summary panel: total games analyzed, overall accuracy metric (0–100), Win/Draw/Loss distribution, ACPL trend or period comparison.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-ANALYSIS-2</div><div class="fr-text">Phase-based breakdown: Opening, Middlegame, Endgame scores (0–100 or A–E) with phase-level blunder/mistake/inaccuracy counts.</div></div>
+    <div class="fr-item"><div class="fr-id">FR-ANALYSIS-3</div><div class="fr-text">Move-quality chart (pie or stacked bar): Best, Excellent, Good, Inaccuracy, Mistake, Blunder.</div></div>
   </section>
   <!-- Section 4 -->
   <section class="section-block">
@@ -308,6 +419,7 @@
     <ul>
       <li>Single batch analysis of ~25 rapid games: typically complete within <strong>2–5 minutes</strong> under normal load</li>
       <li>Dashboard load time (summary + games): under <strong>1.5 seconds</strong> P95 on typical broadband</li>
+      <li>Coaching workspace initial load (conversation shell + <strong>Playing Profile</strong> summary): under <strong>1.5 seconds</strong> P95 on a typical broadband connection</li>
     </ul>
 
     <h3 class="sub-heading">4.2 Scalability</h3>
@@ -345,11 +457,65 @@
     <ul>
       <li>Clear value prop explanation</li>
       <li>Simple form: Chess.com username, email, filters (count, time control, rated)</li>
+      <li>Username may be a <strong>Chess.com or Lichess</strong> username</li>
       <li>Primary CTA: "Get Started"</li>
+      <li>CTA label in the MVP direction: <strong>"Start Coaching"</strong></li>
+      <li>On submit, the user is routed directly into the <strong>AI Coaching Interface</strong></li>
       <li>Inline status messages: "Creating account…", "Fetching your games…"</li>
     </ul>
 
-    <h3 class="sub-heading">5.2 Dashboard Layout (Recommended Order)</h3>
+    <h3 class="sub-heading">5.2 Coaching Workspace Layout</h3>
+    <p>Desktop behaves similarly to ChatGPT: the conversation is the primary workspace, and everything else supports it.</p>
+    <p>Recommended layout:</p>
+    <ol>
+      <li><strong>Sidebar</strong>
+        <ul>
+          <li>New Chat</li>
+          <li>Conversation History</li>
+          <li><strong>Analyze Games</strong> in the bottom section</li>
+        </ul>
+      </li>
+      <li><strong>Conversation Workspace</strong>
+        <ul>
+          <li>Persistent chat thread</li>
+          <li>Coach welcome and pattern-aware follow-ups</li>
+          <li>Message composer fixed near the bottom</li>
+        </ul>
+      </li>
+      <li><strong>Playing Profile</strong>
+        <ul>
+          <li>Collapsible context panel</li>
+          <li>Collapsed by default on smaller screens</li>
+          <li>Summarizes coaching context rather than detailed analytics</li>
+        </ul>
+      </li>
+      <li><strong>Analyze Games Modal</strong>
+        <ul>
+          <li>Opens over the coaching workspace</li>
+          <li>Offers the fixed timeframe choices and a custom range</li>
+          <li>Does not take the user away from the conversation</li>
+        </ul>
+      </li>
+    </ol>
+
+    <h3 class="sub-heading">5.3 Empty States</h3>
+    <ul>
+      <li><strong>No games fetched:</strong> CTA to go back to landing or "Fetch your first games" button
+        <ul>
+          <li>Coach explains that analyzing games will build a personalized <strong>Playing Profile</strong></li>
+          <li>Show <strong>Analyze Games</strong> as the primary next action inside the coaching workspace</li>
+        </ul>
+      </li>
+      <li><strong>No analysis yet:</strong> Explanation and prominent "Analyze All Games" button
+        <ul>
+          <li>Keep the coach conversational and invite the user to analyze recent games</li>
+          <li>Avoid empty analytics panels</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3 class="sub-heading">5.4 Dashboard Layout (Recommended Order)</h3>
+    <p>The dashboard ordering below is the report-style alternative to the coaching workspace layout in 5.2.</p>
     <ol>
       <li><strong>Top Bar</strong> — Greeting, username, quick navigation</li>
       <li><strong>AI Coach Widget</strong> — Quick-access chat, recent conversation snippets, pattern alerts: "New insight: You struggle with rook endgames"</li>
@@ -360,12 +526,6 @@
       <li><strong>Time Management Insights</strong> — Time usage visualization, overthinking/impulsive alerts</li>
       <li><strong>Fetched Games</strong> (collapsible)</li>
     </ol>
-
-    <h3 class="sub-heading">5.3 Empty States</h3>
-    <ul>
-      <li><strong>No games fetched:</strong> CTA to go back to landing or "Fetch your first games" button</li>
-      <li><strong>No analysis yet:</strong> Explanation and prominent "Analyze All Games" button</li>
-    </ul>
   </section>
 
   <!-- Section 6 -->

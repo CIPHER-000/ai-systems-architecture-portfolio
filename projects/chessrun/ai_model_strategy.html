@@ -35,11 +35,16 @@
     <li class="toc-item toc-sub"><a href="#s1-3" class="toc-link"><span class="toc-num">1.3</span>Model Agnosticism</a></li>
     <li class="toc-item"><a href="#s2" class="toc-link"><span class="toc-num">2</span>Coach Service Architecture</a></li>
     <li class="toc-item"><a href="#s3" class="toc-link"><span class="toc-num">3</span>Local Model Strategy</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-4" class="toc-link"><span class="toc-num">3.4</span>GPU Hosting &amp; Scaling</a></li>
     <li class="toc-item"><a href="#s4" class="toc-link"><span class="toc-num">4</span>Fine-Tuning Strategy</a></li>
+    <li class="toc-item toc-sub"><a href="#s4-2" class="toc-link"><span class="toc-num">4.2</span>Reinforcement Learning (RLHF)</a></li>
     <li class="toc-item"><a href="#s5" class="toc-link"><span class="toc-num">5</span>Model Routing Strategy</a></li>
     <li class="toc-item toc-sub"><a href="#s5-3" class="toc-link"><span class="toc-num">5.3</span>Fallback Mechanism</a></li>
     <li class="toc-item"><a href="#s6" class="toc-link"><span class="toc-num">6</span>Chatbot Context System</a></li>
+    <li class="toc-item toc-sub"><a href="#s6-4" class="toc-link"><span class="toc-num">6.4</span>Session Management</a></li>
     <li class="toc-item"><a href="#s7" class="toc-link"><span class="toc-num">7</span>API Structure</a></li>
+    <li class="toc-item toc-sub"><a href="#s7-2" class="toc-link"><span class="toc-num">7.2</span>Context APIs</a></li>
+    <li class="toc-item toc-sub"><a href="#s7-3" class="toc-link"><span class="toc-num">7.3</span>Model Management APIs</a></li>
     <li class="toc-item"><a href="#s8" class="toc-link"><span class="toc-num">8</span>Economic Scaling Model</a></li>
     <li class="toc-item"><a href="#s9" class="toc-link"><span class="toc-num">9</span>What ChessRun Is (And Is Not)</a></li>
     <li class="toc-item"><a href="#s10" class="toc-link"><span class="toc-num">10</span>Implementation Roadmap</a></li>
@@ -76,6 +81,10 @@
   <div class="exec-summary" id="exec-summary">
     <span class="exec-summary-label">Executive Summary</span>
     <p>ChessRun implements a <strong>hybrid AI architecture</strong> that prioritizes <strong>local LLM inference</strong> for core coaching workloads while maintaining <strong>hosted LLM fallbacks</strong> for premium escalations and edge cases. This strategy is economically essential: API costs for hosted LLMs become unsustainable at conversational scale, while Stockfish already handles all chess-specific reasoning.</p>
+    <div class="callout info">
+      <span class="callout-label">MVP UX Authority</span>
+      <p>The MVP UX document (<code class="inline">CHESSRUN_MVP_UX.md</code>) defines the current launch experience. The LLM should optimize for persistent coaching conversations, not report generation or dashboard narration. The temporary local testing LLM remains an implementation provider behind the local-first abstraction and can later be replaced by a hosted local runtime.</p>
+    </div>
     <p><strong>Core Thesis:</strong> The LLM's role is not to "play chess" but to translate structured chess intelligence (Stockfish analysis, behavioral patterns, timing data) into personalized, conversational coaching.</p>
     <p style="margin-bottom:0"><strong>Economic Impact:</strong> Local inference reduces per-user coaching costs from ~$0.05–0.15 per conversation (hosted) to ~$0.0005–0.002 (local), enabling sustainable unit economics at scale.</p>
   </div>
@@ -224,6 +233,7 @@ flowchart TB
     <h3 class="sub-heading">2.2 Service Components</h3>
 
     <h4 class="sub-sub-heading">2.2.1 Context Assembler</h4>
+    <p>Retrieves and structures all relevant chess intelligence for the LLM:</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class ContextAssembler:
@@ -247,6 +257,7 @@ flowchart TB
     </div>
 
     <h4 class="sub-sub-heading">2.2.2 Prompt Builder</h4>
+    <p>Constructs model-agnostic prompts with structured chess context:</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class PromptBuilder:
@@ -280,6 +291,7 @@ flowchart TB
     </div>
 
     <h4 class="sub-sub-heading">2.2.3 Model Router</h4>
+    <p>Intelligent routing decision engine:</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class ModelRouter:
@@ -317,6 +329,7 @@ flowchart TB
           <tr><td>Reasoning</td><td>Stockfish handles chess logic</td><td>LLM handles all reasoning</td></tr>
           <tr><td>Context</td><td>Structured (FEN, patterns, metrics)</td><td>Unstructured (any text)</td></tr>
           <tr><td>Output</td><td>Guided (explanations, recommendations)</td><td>Open generation</td></tr>
+          <tr><td>Creativity</td><td>Low (factual coaching)</td><td>High (creative writing)</td></tr>
           <tr><td>Hallucination Risk</td><td>Low (Stockfish ground truth)</td><td>High (no ground truth)</td></tr>
         </tbody>
       </table>
@@ -374,6 +387,29 @@ flowchart TB
     </div>
     <p><strong>Pros:</strong> High throughput (10x+ vs. Ollama), PagedAttention, OpenAI-compatible API. <strong>Best For:</strong> Production, 100–10K+ concurrent users.</p>
 
+    <h4 class="sub-sub-heading">3.2.3 TensorRT-LLM (Maximum Performance)</h4>
+    <p>For ultimate inference efficiency on NVIDIA hardware:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python"># trt_llm_config.py
+# Requires pre-conversion of models to TensorRT engines
+TRT_LLM_CONFIG = {
+    "models": {
+        "llama3-8b": {
+            "engine_path": "/models/llama3-8b-instruct-awq.trt",
+            "max_batch_size": 32,
+            "max_input_len": 4096,
+            "max_output_len": 1024,
+        }
+    },
+    "runtime": {
+        "enable_chunked_context": True,
+        "enable_context_fmha_fp32": True,
+    }
+}</code></pre>
+    </div>
+    <p><strong>When to Use:</strong> &gt;5K concurrent users, sub-100ms latency requirements, dedicated GPU clusters.</p>
+
     <h3 class="sub-heading">3.3 Model Selection Criteria</h3>
     <div class="table-wrapper">
       <table>
@@ -388,8 +424,12 @@ flowchart TB
       </table>
     </div>
     <p><strong>Recommended Default:</strong> Llama 3 8B Instruct (Q5_K_M). <strong>Cost-Optimized:</strong> Phi-3 Mini for simple queries. <strong>Premium Tier:</strong> Llama 3.1 70B for complex multi-step reasoning.</p>
+    <p><strong>Current Development Runtime:</strong> Phi-3 Mini through Ollama is the CPU-friendly local validation model. It is an MIT-licensed 3.8B instruction model and keeps development coaching grounded without requiring a GPU. Production should move to the recommended 8B-class model behind a GPU-hosted, OpenAI-compatible vLLM endpoint.</p>
 
-    <h3 class="sub-heading">3.4 GPU Hosting &amp; Scaling</h3>
+    <div id="s3-4"></div>
+    <h3 class="sub-heading">3.4 GPU Hosting &amp; Scaling Considerations</h3>
+
+    <h4 class="sub-sub-heading">3.4.1 Infrastructure Options</h4>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Provider</th><th>GPU Type</th><th>Cost/Hour</th><th>Best For</th></tr></thead>
@@ -399,6 +439,50 @@ flowchart TB
           <tr><td><strong>CoreWeave</strong></td><td>A100 40GB</td><td>$2.50</td><td>High-throughput production</td></tr>
           <tr><td><strong>AWS g5</strong></td><td>A10G</td><td>$1.006</td><td>Enterprise, AWS ecosystem</td></tr>
           <tr><td><strong>Self-hosted</strong></td><td>RTX A6000</td><td>CapEx</td><td>Long-term, &gt;10K users</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 class="sub-sub-heading">3.4.2 Scaling Architecture</h4>
+    <div class="diagram-wrapper">
+      <span class="diagram-label">GPU Pool Scaling Architecture</span>
+      <pre class="mermaid">
+flowchart LR
+    LB[Load Balancer]
+    subgraph Pool1["Pool A: Active Inference"]
+        G1[GPU Node 1: vLLM]
+        G2[GPU Node 2: vLLM]
+    end
+    subgraph Pool2["Pool B: Warm Standby"]
+        G3[GPU Node 3: Standby]
+    end
+    subgraph Pool3["Pool C: Hosted Fallback"]
+        OPENAI[OpenAI API]
+    end
+    LB -->|95% traffic| Pool1
+    LB -->|5% traffic| Pool2
+    LB -->|On failure| Pool3
+    MONITOR[Auto-Scaler] -->|Scale up| Pool2
+    MONITOR -->|Scale down| Pool1
+      </pre>
+    </div>
+    <p><strong>Scaling Triggers:</strong></p>
+    <ul>
+      <li><strong>Scale up:</strong> Average GPU utilization &gt;70% for 2 minutes</li>
+      <li><strong>Scale down:</strong> Average GPU utilization &lt;30% for 10 minutes</li>
+      <li><strong>Emergency:</strong> 100% traffic → hosted fallback on local failure</li>
+    </ul>
+
+    <h4 class="sub-sub-heading">3.4.3 Concurrency &amp; Latency</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Metric</th><th>Target</th><th>Achievable (vLLM + 4090)</th></tr></thead>
+        <tbody>
+          <tr><td>First Token Latency (TTFT)</td><td>&lt;500ms</td><td>200–400ms</td></tr>
+          <tr><td>Time Per Output Token</td><td>&lt;50ms</td><td>20–40ms</td></tr>
+          <tr><td>Concurrent Users per GPU</td><td>50–100</td><td>80–120</td></tr>
+          <tr><td>Requests/Second per GPU</td><td>20–50</td><td>30–60</td></tr>
+          <tr><td>End-to-End Response Time</td><td>&lt;3s</td><td>1.5–2.5s</td></tr>
         </tbody>
       </table>
     </div>
@@ -430,6 +514,8 @@ flowchart TB
     </div>
     <div class="section-divider"></div>
 
+    <p><strong>Status — this section is the strategy, not the current decision.</strong> Fine-tuning is Phase 7 of the player-intelligence programme and is <em>not</em> assumed. The gate is a measured one: dataset → harness → baseline, comparing <em>base</em> against <em>prompt + context</em> before any training run is justified, with splits by player or game so the model cannot memorise the same game across splits. On the baseline recorded in <a href="player_intelligence_architecture.html">Player Intelligence Architecture</a> (§10, Layer 8 — Evaluation Before Training), moving from a stand-in prompt to the real coach instructions recovered grounding from 1/3 to 3/3, so the cheap rung did measurable work and the expensive one is not indicated yet. Nothing in the product trains weights today; the deployed path is prompt and context assembly over a hosted model, and a fine-tuned model would be served by repointing <code class="inline">LLM_LOCAL_BASE_URL</code> at a vLLM-style endpoint with no application changes. The sections below record what the training run <em>would</em> be, and the two conditions that would reopen it.</p>
+
     <h3 class="sub-heading">4.1 Domain Adaptation Phase</h3>
     <p><strong>Objective:</strong> Adapt base instruct model to chess coaching domain before production deployment.</p>
     <p><strong>Dataset Sources:</strong></p>
@@ -460,13 +546,15 @@ flowchart TB
 }</code></pre>
     </div>
 
-    <h3 class="sub-heading">4.2 RLHF — Continuous Improvement</h3>
+    <div id="s4-2"></div>
+    <h3 class="sub-heading">4.2 Reinforcement Learning from Human Feedback (RLHF)</h3>
+    <p><strong>Phase 2: Continuous Improvement</strong></p>
     <p>As ChessRun gathers real user interactions:</p>
-    <ul>
-      <li><strong>Preference Data Collection</strong> — Thumbs up/down, "Was this helpful?" feedback, session completion rates</li>
-      <li><strong>Reward Model Training</strong> — Criteria: accuracy, helpfulness, tone, actionability</li>
-      <li><strong>PPO/DPO Fine-Tuning</strong> — Align with user preferences while maintaining Stockfish ground truth</li>
-    </ul>
+    <ol>
+      <li><strong>Preference Data Collection</strong> — thumbs up/down on coaching responses, "Was this helpful?" explicit feedback, and session completion rates (a proxy for quality).</li>
+      <li><strong>Reward Model Training</strong> — train a reward model on preference pairs. Criteria: accuracy, helpfulness, tone, actionability.</li>
+      <li><strong>PPO/DPO Fine-Tuning</strong> — align the model with user preferences while maintaining chess accuracy, constrained by Stockfish ground truth.</li>
+    </ol>
 
     <h3 class="sub-heading">4.3 Personalized Response Styles (Future)</h3>
     <div class="code-block">
@@ -508,6 +596,7 @@ flowchart TB
           <tr><td>"Why did I lose this game?"</td><td>✓ Default</td><td></td><td>Pattern retrieval</td></tr>
           <tr><td>"Compare my style to GM style"</td><td></td><td>✓ Premium</td><td>Advanced reasoning</td></tr>
           <tr><td>Local model failure</td><td></td><td>✓ Fallback</td><td>Reliability</td></tr>
+          <tr><td>Admin/testing queries</td><td></td><td>✓ Testing</td><td>Model comparison</td></tr>
         </tbody>
       </table>
     </div>
@@ -686,6 +775,7 @@ flowchart TB
     </div>
 
     <h3 class="sub-heading">6.3 Pattern-Aware Context Example</h3>
+    <p>The AI Coach always knows the player's critical patterns:</p>
     <blockquote>
       <p><strong>1. Missed Knight Forks (Critical)</strong><br>
       You've missed 12 knight fork opportunities in your last 30 games, affecting 40% of games where forks were available. Most recent: Game #12345, move 24 (Nf3-d4+ forks King and Queen).</p>
@@ -694,6 +784,61 @@ flowchart TB
       <p><strong>3. French Defense Struggles (Developing)</strong><br>
       Win rate in French Defense positions: 32%. Average ACPL in closed positions: 85 (vs. 45 in open positions).</p>
     </blockquote>
+
+    <p>The equivalent literal context string injected into the prompt:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python"># Example context injection
+PATTERN_CONTEXT = """
+## Your Detected Patterns (Critical Priority)
+
+**1. Missed Knight Forks (Critical)**
+- You've missed 12 knight fork opportunities in your last 30 games
+- This affects 40% of your games where forks were available
+- Most recent example: Game #12345, move 24 (Nf3-d4+ forks King and Queen)
+
+**2. Time Pressure Blunders (Significant)**
+- You make 3x more blunders when under 30 seconds
+- 28% of your moves are played in time pressure
+- Recommendation: Practice 15-minute games to build time comfort
+
+**3. French Defense Struggles (Developing)**
+- Win rate in French Defense positions: 32%
+- Average ACPL in closed positions: 85 (vs. 45 in open positions)
+- Consider transitioning to open games (1...e5 or 1...c5)
+"""</code></pre>
+    </div>
+
+    <div id="s6-4"></div>
+    <h3 class="sub-heading">6.4 Session Management</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python">class SessionManager:
+    def create_session(self, user_id: int) -> Session:
+        """Initialize new coaching session with full context."""
+        session = Session(
+            id=generate_uuid(),
+            user_id=user_id,
+            created_at=now(),
+            context_snapshot=self.capture_full_context(user_id)
+        )
+
+        # Pre-warm with player summary
+        summary = self.generate_player_summary(user_id)
+        self.add_system_message(session.id, summary)
+
+        return session
+
+    def capture_full_context(self, user_id: int) -> ContextSnapshot:
+        """Capture point-in-time player state."""
+        return ContextSnapshot(
+            profile=self.profile_store.get(user_id),
+            top_patterns=self.pattern_store.get_top_patterns(user_id, n=10),
+            recent_games=self.game_store.get_recent(user_id, n=5),
+            timing_summary=self.timing_store.get_summary(user_id),
+            captured_at=now()
+        )</code></pre>
+    </div>
   </section>
 
   <!-- Section 7 -->
@@ -743,6 +888,89 @@ flowchart TB
 }</code></pre>
     </div>
 
+    <h4 class="sub-sub-heading">GET /v1/coach/suggestions</h4>
+    <p>Returns pattern-aware conversation starters:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "suggestions": [
+    {
+      "type": "critical_pattern",
+      "text": "Why do I keep missing knight forks?",
+      "pattern_id": 789,
+      "priority": "high"
+    },
+    {
+      "type": "improvement",
+      "text": "Help me fix my French Defense",
+      "pattern_id": 801,
+      "priority": "medium"
+    },
+    {
+      "type": "recent_game",
+      "text": "What went wrong in my last game?",
+      "game_id": 12345,
+      "priority": "low"
+    }
+  ],
+  "generated_at": "2025-01-12T10:00:00Z"
+}</code></pre>
+    </div>
+
+    <h4 class="sub-sub-heading">GET /v1/coach/history/{session_id}</h4>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "session_id": "uuid-session-123",
+  "user_id": 456,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Why do I keep blundering in time pressure?",
+      "timestamp": "2025-01-12T10:00:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "I see a clear pattern...",
+      "timestamp": "2025-01-12T10:00:01Z",
+      "referenced_patterns": [789, 792],
+      "model_used": "llama3-8b-local"
+    }
+  ],
+  "context_snapshot": {
+    "captured_at": "2025-01-12T09:55:00Z",
+    "patterns_count": 12,
+    "games_analyzed": 156
+  }
+}</code></pre>
+    </div>
+
+    <div id="s7-2"></div>
+    <h3 class="sub-heading">7.2 Context APIs</h3>
+
+    <h4 class="sub-sub-heading">GET /v1/player/{user_id}/patterns</h4>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "user_id": 456,
+  "patterns": [
+    {
+      "id": 789,
+      "type": "tactical",
+      "name": "missed_knight_forks",
+      "severity": "critical",
+      "confidence": 0.87,
+      "description": "Missed knight fork opportunities in tactical positions",
+      "occurrence_count": 12,
+      "affected_games_ratio": 0.42,
+      "example_positions": [...],
+      "recommended_drill": "knight_fork_tactics"
+    }
+  ],
+  "generated_at": "2025-01-12T08:00:00Z"
+}</code></pre>
+    </div>
+
     <h4 class="sub-sub-heading">GET /v1/player/{user_id}/profile</h4>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
@@ -762,7 +990,28 @@ flowchart TB
 }</code></pre>
     </div>
 
-    <h3 class="sub-heading">7.3 Model Management API (Admin)</h3>
+    <h4 class="sub-sub-heading">GET /v1/insights/recommendations/{user_id}</h4>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "user_id": 456,
+  "recommendations": [
+    {
+      "type": "drill",
+      "priority": "critical",
+      "title": "Knight Fork Recognition",
+      "description": "You miss forks in 40% of applicable positions",
+      "pattern_id": 789,
+      "estimated_time": "15 minutes",
+      "skill_improvement": "tactical_vision"
+    }
+  ],
+  "generated_at": "2025-01-12T10:00:00Z"
+}</code></pre>
+    </div>
+
+    <div id="s7-3"></div>
+    <h3 class="sub-heading">7.3 Model Management APIs (Admin)</h3>
     <h4 class="sub-sub-heading">GET /v1/admin/models/status</h4>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
@@ -799,6 +1048,13 @@ flowchart TB
     <div class="section-divider"></div>
 
     <h3 class="sub-heading">8.1 Cost Projections</h3>
+    <p><strong>Assumptions:</strong></p>
+    <ul>
+      <li>Average session: 5 messages, 3K tokens per message</li>
+      <li>Local model: $1 per 1M tokens</li>
+      <li>Hosted model (GPT-4): $45 per 1M tokens</li>
+      <li>Target margin: 70% on AI coaching features</li>
+    </ul>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Users</th><th>Monthly Sessions</th><th>Local Cost</th><th>Hosted Cost</th><th>Savings</th></tr></thead>
@@ -862,6 +1118,7 @@ flowchart TB
       <li><strong>An economically scalable platform:</strong> Local-first architecture enables sustainable unit economics at 100K+ users.</li>
       <li><strong>A model-agnostic infrastructure:</strong> Swappable LLM backends prevent vendor lock-in.</li>
       <li><strong>A continuously improving system:</strong> RLHF pipeline ensures coaching quality improves with usage.</li>
+      <li><strong>An enterprise-grade architecture:</strong> Production-ready with fallback, monitoring, and scaling built-in.</li>
     </ul>
   </section>
 
@@ -902,6 +1159,7 @@ flowchart TB
       <p class="roadmap-phase-title">Phase 4: Optimization (Months 10–12)</p>
       <div class="roadmap-item">Model distillation for edge deployment</div>
       <div class="roadmap-item">TensorRT-LLM optimization</div>
+      <div class="roadmap-item">Caching layer optimization</div>
       <div class="roadmap-item">Cost monitoring and optimization</div>
       <div class="roadmap-item">Open-source model contribution</div>
     </div>
