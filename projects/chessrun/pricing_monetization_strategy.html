@@ -72,6 +72,11 @@
     <p>ChessRun employs a <strong>progressive monetization strategy</strong> that prioritizes user adoption and product validation before aggressive revenue extraction. The platform launches with an <strong>Open Beta</strong> (free) phase to build a data foundation, followed by a <strong>Freemium</strong> model that hooks users with genuine value, and scales through <strong>tiered AI coaching plans</strong> that align pricing with user improvement and coaching depth.</p>
     <p><strong>Core Economic Thesis:</strong> ChessRun's hybrid AI architecture (local-first LLM with hosted fallback) enables sustainable unit economics impossible with hosted-only competitors. This cost advantage translates to competitive pricing, higher margins, and scalable growth.</p>
     <p><strong>Strategic Positioning:</strong> ChessRun is priced as <strong>personalized chess coaching software</strong> — not as "AI chatbot access" or "token usage." The value proposition centers on <em>improvement, training effectiveness, and personalized intelligence</em>.</p>
+    <p>The comparable category is Chessable, Duolingo, or a human coach. The MVP value proposition centers on <strong>persistent coaching conversations</strong>, game-analysis-informed personalization, and the <strong>Playing Profile</strong>. Training products, exports, and scheduled reports are future packaging options.</p>
+    <div class="callout info">
+      <span class="callout-label">MVP UX Authority</span>
+      <p><code class="inline">docs/product/CHESSRUN_MVP_UX.md</code> defines the current launch experience. Pricing should package the coaching conversation as the product; analysis and the Playing Profile exist to improve coaching quality.</p>
+    </div>
   </div>
 
   <!-- Section 1 -->
@@ -85,14 +90,16 @@
 
     <div id="s1-1"></div>
     <h3 class="sub-heading">1.1 Why Free Beta First?</h3>
-    <p>The early priority is:</p>
+    <p>ChessRun should <strong>NOT</strong> aggressively monetize immediately. The early priority is:</p>
     <ul>
       <li><strong>User adoption:</strong> Build a critical mass of engaged players</li>
       <li><strong>Feedback collection:</strong> Real users expose coaching gaps and AI limitations</li>
       <li><strong>Coaching refinement:</strong> Pattern recognition improves with more game data</li>
       <li><strong>AI improvement:</strong> RLHF pipeline requires real conversational interactions</li>
+      <li><strong>Retention analysis:</strong> Understand what drives long-term engagement</li>
       <li><strong>Behavioral pattern data collection:</strong> More users = better pattern detection algorithms</li>
     </ul>
+    <p>The product needs <strong>real users, real games, real coaching interactions, and real conversational usage</strong> before pricing can be optimized properly.</p>
 
     <div class="callout warning">
       <span class="callout-label">Premature Monetization Risks</span>
@@ -140,7 +147,27 @@ Month 12+:    FULL TIERS   → Scale revenue with proven model</code></pre>
       </table>
     </div>
 
+    <div id="s2-2"></div>
+    <h3 class="sub-heading">2.2 Beta Feature Access</h3>
+    <p><strong>Users receive FREE access to:</strong></p>
+    <ul>
+      <li>Chess.com account linking and game fetching</li>
+      <li>Stockfish position analysis (depth 20)</li>
+      <li>Basic pattern recognition (top 3 patterns)</li>
+      <li>Conversational AI coaching (limited monthly volume)</li>
+      <li>Analyze Games modal with MVP timeframe options</li>
+      <li>Playing Profile (games analyzed, patterns identified, strongest area, biggest bottleneck, last analysis timestamp)</li>
+      <li>Persistent coaching conversations</li>
+    </ul>
+    <p><strong>Future, not MVP launch promises:</strong></p>
+    <ul>
+      <li>Training mode with critical moment replay</li>
+      <li>Weekly recommendation summaries</li>
+      <li>Export reports</li>
+    </ul>
+
     <h3 class="sub-heading">2.3 Beta Usage Limitations</h3>
+    <p>Despite being free, usage limitations exist for operational reasons:</p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Limitation</th><th>Value</th><th>Rationale</th></tr></thead>
@@ -149,12 +176,41 @@ Month 12+:    FULL TIERS   → Scale revenue with proven model</code></pre>
           <tr><td><strong>AI Coaching Chats / Month</strong></td><td>20 conversations</td><td>Controls hosted fallback exposure</td></tr>
           <tr><td><strong>Context Memory</strong></td><td>Last 5 messages</td><td>Reduces context window costs</td></tr>
           <tr><td><strong>Historical Lookback</strong></td><td>90 days</td><td>Limits pattern computation load</td></tr>
-          <tr><td><strong>Analysis Queue Priority</strong></td><td>Low</td><td>Ensures paid users get priority</td></tr>
+          <tr><td><strong>Analysis Queue Priority</strong></td><td>Low (behind paid tiers)</td><td>Ensures paid users get priority</td></tr>
           <tr><td><strong>Pattern Refresh Rate</strong></td><td>Weekly</td><td>Reduces computation cycles</td></tr>
           <tr><td><strong>Export Capabilities</strong></td><td>None</td><td>Premium feature reserved</td></tr>
         </tbody>
       </table>
     </div>
+
+    <div id="s2-4"></div>
+    <h3 class="sub-heading">2.4 Why These Limits Exist</h3>
+    <h4 class="sub-sub-heading">Cost Control</h4>
+    <ul>
+      <li>Stockfish analysis at depth 20 costs ~$0.001 per game (compute time)</li>
+      <li>30 games × 10,000 users = $300/month — manageable for beta</li>
+      <li>Unlimited would scale to $10K+/month with no revenue</li>
+    </ul>
+    <h4 class="sub-sub-heading">Infrastructure Stability</h4>
+    <ul>
+      <li>Beta helps identify infrastructure bottlenecks</li>
+      <li>Limited volume prevents cascading failures during learning</li>
+      <li>Queue prioritization ensures beta doesn't impact paid users later</li>
+    </ul>
+    <h4 class="sub-sub-heading">Preventing Abuse</h4>
+    <ul>
+      <li>Some users would "farm" unlimited free analysis</li>
+      <li>API abuse protection for Chess.com integration</li>
+      <li>Rate limiting prevents individual users from consuming disproportionate resources</li>
+    </ul>
+    <h4 class="sub-sub-heading">Protecting Hosted Fallback Costs</h4>
+    <ul>
+      <li>Local model handles 95%+ of coaching</li>
+      <li>Hosted fallback (GPT-4) costs 45× more per conversation</li>
+      <li>20 chats/user × 10,000 users = 200K chats/month</li>
+      <li>If even 5% require hosted fallback = 10K expensive chats</li>
+      <li>Without limits, this could cost $1,200/month in API fees alone (with no revenue)</li>
+    </ul>
 
     <h3 class="sub-heading">2.5 Beta Success Criteria</h3>
     <div class="callout secondary">
@@ -186,29 +242,77 @@ Month 12+:    FULL TIERS   → Scale revenue with proven model</code></pre>
     </div>
     <div class="section-divider"></div>
 
+    <div id="s3-1"></div>
+    <h3 class="sub-heading">3.1 Freemium Philosophy</h3>
     <div class="callout secondary">
       <span class="callout-label">Freemium Philosophy</span>
       <p><strong>Psychological framing:</strong> Free tier is "getting started," paid tiers are "getting serious about improvement."</p>
       <p>The FREE tier must: remain genuinely useful, showcase AI coaching value, encourage long-term engagement, and create clear upgrade motivation. Limits should feel <em>natural</em>, not punitive.</p>
     </div>
+    <p>The FREE tier must:</p>
+    <ul>
+      <li><strong>Remain genuinely useful</strong> — users can improve without paying</li>
+      <li><strong>Showcase AI coaching value</strong> — demonstrate the pattern-aware, personalized experience</li>
+      <li><strong>Encourage long-term engagement</strong> — build habit before asking for money</li>
+      <li><strong>Create clear upgrade motivation</strong> — limits should feel natural, not punitive</li>
+    </ul>
 
     <h3 class="sub-heading">3.2 Free Tier Features</h3>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Feature</th><th>Free Access</th><th>Limitation</th></tr></thead>
         <tbody>
-          <tr><td>Game Fetching</td><td>Unlimited</td><td>Chess.com only</td></tr>
+          <tr><td>Game Fetching</td><td>Unlimited</td><td>Chess.com only (Lichess later)</td></tr>
           <tr><td>Stockfish Analysis</td><td>Depth 18</td><td>50 games/month</td></tr>
           <tr><td>Pattern Detection</td><td>Top 3 patterns</td><td>Weekly refresh only</td></tr>
           <tr><td>AI Coaching</td><td>15 chats/month</td><td>Local model only</td></tr>
           <tr><td>Context Memory</td><td>Last 3 messages</td><td>Limited conversation depth</td></tr>
           <tr><td>Historical Lookback</td><td>90 days</td><td>No long-term trends</td></tr>
           <tr><td>Recommendations</td><td>Weekly summary</td><td>No drill customization</td></tr>
+          <tr><td>Analyze Games</td><td>Modal timeframe selection</td><td>Monthly analysis cap applies</td></tr>
+          <tr><td>Playing Profile</td><td>Basic scouting report</td><td>Limited history depth</td></tr>
+          <tr><td>Community</td><td>Access</td><td>Read-only</td></tr>
           <tr><td>Training Mode</td><td>Basic mode</td><td>No spaced repetition</td></tr>
           <tr><td>Player Profile</td><td>Basic archetype</td><td>No style evolution tracking</td></tr>
         </tbody>
       </table>
     </div>
+
+    <div id="s3-3"></div>
+    <h3 class="sub-heading">3.3 Free Tier Limitations (Strategic Rationale)</h3>
+    <h4 class="sub-sub-heading">50 Games/Month Analysis</h4>
+    <ul>
+      <li>Serious players play 3-5 games/day = 90-150 games/month</li>
+      <li>50 games covers 2-3 games/day — enough for casual improvement</li>
+      <li>Heavy players hit the limit and feel motivation to upgrade</li>
+      <li>Prevents power users from staying on free indefinitely</li>
+    </ul>
+    <h4 class="sub-sub-heading">15 AI Coaching Chats/Month</h4>
+    <ul>
+      <li>15 chats ≈ 3-4 meaningful coaching sessions</li>
+      <li>Enough to ask "Why did I lose?" and get pattern explanation</li>
+      <li>Not enough for daily coaching check-ins (habit formation)</li>
+      <li>Upgrade unlocks unlimited coaching conversations</li>
+    </ul>
+    <h4 class="sub-sub-heading">90-Day Historical Lookback</h4>
+    <ul>
+      <li>Shows recent improvement/deterioration</li>
+      <li>Can't see year-over-year progress (motivational loss)</li>
+      <li>Can't track long-term pattern evolution</li>
+      <li>Upgrade unlocks "journey" view with full history</li>
+    </ul>
+    <h4 class="sub-sub-heading">Weekly Pattern Refresh</h4>
+    <ul>
+      <li>Free users see stale patterns (opportunities for improvement not visible)</li>
+      <li>Daily refresh for paid users = competitive advantage</li>
+      <li>Creates urgency: "See what you improved today"</li>
+    </ul>
+    <h4 class="sub-sub-heading">Local Model Only</h4>
+    <ul>
+      <li>Free users get capable 8B model coaching</li>
+      <li>Premium hosted model (GPT-4/Claude) is Pro/Elite exclusive</li>
+      <li>Quality difference is noticeable but free tier remains functional</li>
+    </ul>
 
     <h3 class="sub-heading">3.4 Conversion Funnel Design</h3>
     <div class="code-block">
@@ -233,6 +337,8 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
     </div>
     <div class="section-divider"></div>
 
+    <div id="s4-1"></div>
+    <h3 class="sub-heading">4.1 Pro Plan Positioning</h3>
     <div class="callout secondary">
       <span class="callout-label">Pro Plan Overview</span>
       <p><strong>Price:</strong> $9.99/month or $79.99/year (33% savings)</p>
@@ -240,7 +346,8 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
       <p><strong>Value Proposition:</strong> "Unlimited personalized AI coaching that adapts to your specific patterns and helps you train smarter."</p>
     </div>
 
-    <h3 class="sub-heading">4.2 Pro Plan Economics</h3>
+    <h3 class="sub-heading">4.2 Pro Plan Architecture</h3>
+    <p><strong>AI Infrastructure:</strong> Primarily <strong>local LLM inference</strong> for sustainable economics.</p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Component</th><th>Implementation</th><th>Cost/User/Month</th></tr></thead>
@@ -255,6 +362,7 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
         </tbody>
       </table>
     </div>
+    <p><strong>Economic Sustainability:</strong> At 79% gross margin, Pro Plan is highly profitable even with local infrastructure costs. Scale improves margins through better GPU utilization.</p>
 
     <h3 class="sub-heading">4.3 Pro Plan Features</h3>
     <div class="table-wrapper">
@@ -266,21 +374,45 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
           <tr><td><strong>Unlimited AI Coaching</strong></td><td>Local model, unlimited chats</td><td>"Coach available 24/7"</td></tr>
           <tr><td><strong>Deep Context Memory</strong></td><td>Full conversation threading</td><td>"Coach remembers everything"</td></tr>
           <tr><td><strong>Unlimited History</strong></td><td>Lifetime game/pattern storage</td><td>"Track your improvement journey"</td></tr>
-          <tr><td><strong>Personalized Training Plans</strong></td><td>AI-generated weekly plans</td><td>"Know exactly what to study"</td></tr>
+          <tr><td><strong>Advanced Playing Profile</strong></td><td>Deeper scouting report + evolution</td><td>"See what your coach is tracking"</td></tr>
           <tr><td><strong>Opening Analysis</strong></td><td>Repertoire tracking, success rates</td><td>"Fix your opening problems"</td></tr>
           <tr><td><strong>Timing/Behavioral Analysis</strong></td><td>Time management insights</td><td>"Stop blundering on the clock"</td></tr>
           <tr><td><strong>Priority Queue</strong></td><td>High-priority analysis</td><td>"Results in minutes, not hours"</td></tr>
+          <tr><td><strong>Style Evolution Tracking</strong></td><td>Archetype changes over time</td><td>"Watch yourself become a tactician"</td></tr>
+          <tr><td><strong>Personalized Training Plans</strong></td><td>AI-generated weekly plans</td><td>"Know exactly what to study"</td></tr>
           <tr><td><strong>Export Reports</strong></td><td>PDF/CSV analysis export</td><td>"Share progress with coach"</td></tr>
           <tr><td><strong>Spaced Repetition Training</strong></td><td>Pattern-specific drills</td><td>"Actually fix your weaknesses"</td></tr>
           <tr><td><strong>Auto-Analysis</strong></td><td>Background game fetching + automatic Stockfish</td><td>"Stay coached even when offline"</td></tr>
+          <tr><td><strong>Coach Check-Ins</strong></td><td>Conversation-based summaries when new analysis completes</td><td>"Your coach checks in, not the other way around"</td></tr>
         </tbody>
       </table>
     </div>
+    <p>Future expansion products include personalized training plans, spaced repetition drills, export reports, and scheduled email reports.</p>
 
+    <div id="s4-4"></div>
+    <h3 class="sub-heading">4.4 Why Pro Plan Uses Local Models Exclusively</h3>
     <div class="callout secondary">
       <span class="callout-label">Why Pro Uses Local Models Exclusively</span>
       <p>Unlimited coaching × 10,000 users = millions of conversations. Hosted model (GPT-4) would cost $45,000+/month at this volume. Local model costs $10,000/month for the same volume (75% savings). Competitors using hosted models must charge $20–30/month. <strong>ChessRun Pro at $9.99 is 50% cheaper with comparable quality.</strong></p>
     </div>
+    <h4 class="sub-sub-heading">Economic Necessity</h4>
+    <ul>
+      <li>Unlimited coaching × 10,000 users = millions of conversations</li>
+      <li>Hosted model (GPT-4) would cost $45,000+/month at this volume</li>
+      <li>Local model costs $10,000/month for same volume (75% savings)</li>
+    </ul>
+    <h4 class="sub-sub-heading">Quality Sufficiency</h4>
+    <ul>
+      <li>Llama 3 8B fine-tuned for chess coaching matches GPT-4 on explanation tasks</li>
+      <li>Pattern-aware prompting compensates for model size difference</li>
+      <li>User studies show 85%+ satisfaction with local model coaching</li>
+    </ul>
+    <h4 class="sub-sub-heading">Strategic Differentiation</h4>
+    <ul>
+      <li>Competitors using hosted models must charge $20–30/month for sustainable economics</li>
+      <li>ChessRun Pro at $9.99 is 50% cheaper with comparable quality</li>
+      <li>Price advantage drives adoption and market share</li>
+    </ul>
   </section>
 
   <!-- Section 5 -->
@@ -292,19 +424,41 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
     </div>
     <div class="section-divider"></div>
 
+    <div id="s5-1"></div>
+    <h3 class="sub-heading">5.1 Elite Plan Positioning</h3>
     <div class="callout secondary">
       <span class="callout-label">Elite Plan Overview</span>
       <p><strong>Price:</strong> $29.99/month or $299.99/year (17% savings)</p>
-      <p><strong>Target User:</strong> Serious competitors (1800+ rating), tournament players, coaches, content creators.</p>
+      <p><strong>Target User:</strong> Serious competitors (1800+ rating), tournament players, coaches, content creators, streamers, and professionals seeking competitive edge.</p>
       <p><strong>Value Proposition:</strong> "Elite-tier AI coaching with advanced reasoning, tournament preparation, and live analysis capabilities."</p>
     </div>
 
-    <h3 class="sub-heading">5.3 Elite Plan Economics</h3>
+    <div id="s5-2"></div>
+    <h3 class="sub-heading">5.2 Why Elite Plan Exists</h3>
+    <h4 class="sub-sub-heading">Economic Reality</h4>
+    <ul>
+      <li>Hosted LLMs (GPT-4, Claude 3 Opus) are genuinely expensive</li>
+      <li>Advanced reasoning requires larger context windows (32K+)</li>
+      <li>Tournament preparation needs deeper analysis than local models provide</li>
+    </ul>
+    <h4 class="sub-sub-heading">User Psychology</h4>
+    <ul>
+      <li>Some users will pay for "the best"</li>
+      <li>Perceived value of "GPT-4 coaching" vs. "Llama 3 coaching"</li>
+      <li>Tournament players need every edge — $30/month is negligible vs. coaching costs</li>
+    </ul>
+    <h4 class="sub-sub-heading">Margin Protection</h4>
+    <ul>
+      <li>Elite users subsidize infrastructure for Pro/Free tiers</li>
+      <li>10% Elite users can fund 50% of total AI infrastructure</li>
+    </ul>
+
+    <h3 class="sub-heading">5.3 Elite Plan AI Architecture</h3>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Component</th><th>Implementation</th><th>Cost/User/Month</th></tr></thead>
         <tbody>
-          <tr><td>Stockfish Analysis</td><td>Unlimited, depth 24</td><td>$0.75</td></tr>
+          <tr><td>Stockfish Analysis</td><td>Unlimited, depth 24 (higher)</td><td>$0.75</td></tr>
           <tr><td>Pattern Recognition</td><td>Real-time, tournament mode</td><td>$0.50</td></tr>
           <tr><td><strong>AI Coaching</strong></td><td><strong>Hosted model (GPT-4/Claude)</strong></td><td><strong>$8.00</strong></td></tr>
           <tr><td>Context Memory</td><td>32K token context</td><td>$0.50</td></tr>
@@ -314,6 +468,7 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
         </tbody>
       </table>
     </div>
+    <p><strong>Margin Note:</strong> Lower margin than Pro (67% vs. 79%) but still healthy. Elite tier volume is 10–20% of total user base, so impact on overall margins is manageable.</p>
 
     <h3 class="sub-heading">5.4 Elite Plan Premium Capabilities</h3>
     <div class="table-wrapper">
@@ -323,17 +478,20 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
           <tr><td><strong>GPT-4 / Claude Coaching</strong></td><td>Unlimited hosted model</td><td>Richer explanations, better reasoning</td></tr>
           <tr><td><strong>32K Context Window</strong></td><td>Long conversation memory</td><td>Multi-game analysis, tournament prep</td></tr>
           <tr><td><strong>Tournament Preparation</strong></td><td>Opponent pattern analysis</td><td>"Know your opponent's weaknesses"</td></tr>
+          <tr><td><strong>Live Game Assistance</strong></td><td>Browser extension integration</td><td>Real-time suggestions (future)</td></tr>
           <tr><td><strong>Advanced Opening Labs</strong></td><td>Full repertoire optimization</td><td>Opening mastery system</td></tr>
           <tr><td><strong>Deep Game Reviews</strong></td><td>Hour-long game analysis sessions</td><td>Post-mortem with elite coach</td></tr>
           <tr><td><strong>Voice Coaching</strong></td><td>AI-generated voice narration</td><td>Listen while you train</td></tr>
           <tr><td><strong>Stream Integration</strong></td><td>OBS overlay, chat commands</td><td>Content creator tools</td></tr>
-          <tr><td><strong>Coach Collaboration</strong></td><td>Share data with human coach</td><td>AI + human hybrid coaching</td></tr>
+          <tr><td><strong>Priority Support</strong></td><td>Discord/email support</td><td>White-glove experience</td></tr>
+          <tr><td><strong>Analytics Export API</strong></td><td>Raw data access</td><td>Integration with external tools</td></tr>
           <tr><td><strong>Personal Improvement Roadmap</strong></td><td>6-month structured plan</td><td>Guaranteed improvement path</td></tr>
+          <tr><td><strong>Coach Collaboration</strong></td><td>Share data with human coach</td><td>AI + human hybrid coaching</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3 class="sub-heading">5.5 Elite Value Communication</h3>
+    <h3 class="sub-heading">5.5 Elite Plan Value Communication</h3>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>NOT Marketed As</th><th>IS Marketed As</th></tr></thead>
@@ -363,6 +521,8 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
     </div>
     <div class="section-divider"></div>
 
+    <div id="s6-1"></div>
+    <h3 class="sub-heading">6.1 What ChessRun Is NOT Priced As</h3>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Don't Price As</th><th>Why It Fails</th></tr></thead>
@@ -375,12 +535,21 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
       </table>
     </div>
 
-    <h3 class="sub-heading">6.2 Comparable Products</h3>
+    <h3 class="sub-heading">6.2 What ChessRun IS Priced As</h3>
+    <p><strong>Psychological Category:</strong> Personal coaching and training software</p>
+    <p><strong>Comparable Products:</strong></p>
     <ul>
       <li>Chessable courses: $30–100 per course</li>
       <li>Chess.com Diamond: $14/month</li>
       <li>Human coaching: $50–200/hour</li>
       <li>Duolingo Super: $13/month (language learning = similar improvement paradigm)</li>
+    </ul>
+    <p><strong>Value Anchors:</strong></p>
+    <ul>
+      <li>"Personalized coach available 24/7"</li>
+      <li>"Pattern recognition that sees what you miss"</li>
+      <li>"Training plans based on your actual weaknesses"</li>
+      <li>"Improvement tracking across your entire chess journey"</li>
     </ul>
 
     <h3 class="sub-heading">6.3 Feature Gating Philosophy</h3>
@@ -407,6 +576,7 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
     <div class="section-divider"></div>
 
     <h3 class="sub-heading">7.1 The Cost Problem: Why Local Inference Is Strategic</h3>
+    <p><strong>Conversational AI at Scale is Expensive:</strong></p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Scenario</th><th>Hosted-Only (GPT-4)</th><th>Hybrid (Local + Hosted)</th><th>Savings</th></tr></thead>
@@ -417,8 +587,35 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
         </tbody>
       </table>
     </div>
+    <h4 class="sub-sub-heading">Why These Costs Exist</h4>
+    <ul>
+      <li>Heavy conversational usage (users talk to coach daily)</li>
+      <li>Large context windows (game positions, pattern history, FEN strings)</li>
+      <li>Repeated interactions (coaching is ongoing, not one-time)</li>
+      <li>Stateful conversations (context carries across sessions)</li>
+    </ul>
+    <h4 class="sub-sub-heading">The Hosted-Only Competitor Trap</h4>
+    <ul>
+      <li>Charge $20–30/month just to break even on AI costs</li>
+      <li>Can't offer unlimited coaching (would go bankrupt)</li>
+      <li>Forced into confusing "token credit" systems</li>
+      <li>Users feel nickel-and-dimed</li>
+    </ul>
 
-    <h3 class="sub-heading">7.2 Unit Economics at Scale</h3>
+    <h3 class="sub-heading">7.2 ChessRun's Economic Advantage</h3>
+    <h4 class="sub-sub-heading">Local Inference Default</h4>
+    <ul>
+      <li>95%+ of coaching conversations handled by local Llama 3 8B</li>
+      <li>Cost: $0.001–0.003 per conversation (GPU amortized)</li>
+      <li>Quality: Equivalent for explanation/coaching tasks</li>
+    </ul>
+    <h4 class="sub-sub-heading">Hosted Fallback Strategy</h4>
+    <ul>
+      <li>Only 5% of conversations escalate to hosted model</li>
+      <li>Escalation triggers: complex reasoning, premium users, local failure</li>
+      <li>Hosted cost absorbed into Elite tier pricing</li>
+    </ul>
+    <p><strong>Unit Economics at Scale:</strong></p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Tier</th><th>Price</th><th>AI COGS</th><th>Gross Margin</th><th>Monthly Profit (10K subs)</th></tr></thead>
@@ -431,7 +628,18 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
       </table>
     </div>
 
-    <h3 class="sub-heading">7.3 Infrastructure Scaling</h3>
+    <h3 class="sub-heading">7.3 Infrastructure Scaling Strategy</h3>
+    <p><strong>Predictable VPS/GPU Costs vs. Variable API Costs:</strong></p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Approach</th><th>Cost Model</th><th>Predictability</th><th>At Scale</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Hosted-Only</strong></td><td>Per-token billing</td><td>Low (usage spikes)</td><td>Expensive, unpredictable</td></tr>
+          <tr><td><strong>Local-First</strong></td><td>Fixed GPU costs</td><td>High (flat monthly)</td><td>Economical, predictable</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Infrastructure Roadmap:</strong></p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code>Users         Infrastructure                    Monthly Cost
@@ -445,6 +653,7 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
     <p><strong>Key Insight:</strong> Local infrastructure costs grow linearly and predictably. Hosted API costs grow with user engagement (unpredictably).</p>
 
     <h3 class="sub-heading">7.4 Hosted Model Escalation Logic</h3>
+    <p><strong>When Local is Insufficient:</strong></p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Trigger</th><th>Routing Decision</th><th>Rationale</th></tr></thead>
@@ -453,9 +662,16 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
           <tr><td>Complexity score &gt;0.9</td><td>Route to hosted</td><td>Multi-step reasoning needed</td></tr>
           <tr><td>User tier = Elite</td><td>Route to hosted</td><td>Premium expectation</td></tr>
           <tr><td>Local model unhealthy</td><td>Route to hosted</td><td>Fallback reliability</td></tr>
+          <tr><td>Admin query</td><td>Route to hosted</td><td>Testing/comparison</td></tr>
         </tbody>
       </table>
     </div>
+    <h4 class="sub-sub-heading">Escalation Cost Control</h4>
+    <ul>
+      <li>Max 10% of conversations escalate (target: 5%)</li>
+      <li>Elite users subsidize their own escalation costs</li>
+      <li>Pro users never escalate (local-only tier)</li>
+    </ul>
   </section>
 
   <!-- Section 8 -->
@@ -467,6 +683,59 @@ Weekly refresh lagging → "Get daily insights"            → Pro Plan</code></
     </div>
     <div class="section-divider"></div>
 
+    <div id="s8-1"></div>
+    <h3 class="sub-heading">8.1 Default Routing: Local First</h3>
+    <p><strong>95%+ of Traffic → Local Model (Llama 3 8B)</strong></p>
+    <h4 class="sub-sub-heading">Advantages</h4>
+    <ul>
+      <li>90%+ cost reduction vs. hosted</li>
+      <li>Sub-2-second response times</li>
+      <li>No external dependency (reliability)</li>
+      <li>Data privacy (conversations stay on-premise)</li>
+      <li>Vendor independence</li>
+    </ul>
+    <h4 class="sub-sub-heading">Quality Sufficiency</h4>
+    <ul>
+      <li>Task is explanation/translation, not chess reasoning</li>
+      <li>Pattern-aware prompting provides structured context</li>
+      <li>Fine-tuning on chess coaching data improves relevance</li>
+      <li>User satisfaction: 85%+ (within 5% of hosted model)</li>
+    </ul>
+
+    <div id="s8-2"></div>
+    <h3 class="sub-heading">8.2 Fallback Routing: Hosted When Necessary</h3>
+    <p><strong>5% of Traffic → Hosted Model (GPT-4 / Claude)</strong></p>
+    <h4 class="sub-sub-heading">Fallback Conditions</h4>
+    <ul>
+      <li>Local model failure after retries (timeout threshold ~30 seconds; retries and request queueing occur first)</li>
+      <li>Context length overflow — <strong>user is warned first</strong> and prompted to start a focused session; escalation only occurs after user acknowledgment (Elite tier only)</li>
+      <li>Complex multi-pattern analysis (Elite tier only)</li>
+      <li>Premium user (Elite tier)</li>
+      <li>Quality degradation detected</li>
+    </ul>
+    <div class="callout warning">
+      <span class="callout-label">Architecture Note</span>
+      <p>A 5-second local timeout should <strong>NOT</strong> trigger immediate hosted fallback. Local models need time for longer coaching contexts. The correct escalation path is: <code>retry → queue → warn user (context overflow) → hosted fallback (tier permitting)</code>. This avoids unnecessary hosted API costs and maintains expected local-first behavior.</p>
+    </div>
+    <h4 class="sub-sub-heading">Fallback Cost Management</h4>
+    <ul>
+      <li>Caching: Similar queries return cached responses</li>
+      <li>Rate limiting: Max 20% of Elite users can simultaneously use hosted</li>
+      <li>Queue: Hosted requests queued to prevent API throttling</li>
+    </ul>
+
+    <div id="s8-3"></div>
+    <h3 class="sub-heading">8.3 Premium Routing: Elite Tier Entitlement</h3>
+    <p><strong>Elite Users → Hosted Default, Local Fallback</strong></p>
+    <h4 class="sub-sub-heading">Inverse Routing Logic</h4>
+    <ul>
+      <li>Elite users default to GPT-4/Claude</li>
+      <li>If hosted unavailable, gracefully degrade to local</li>
+      <li>User notified: "Using high-performance coach" / "Using standard coach"</li>
+    </ul>
+
+    <div id="s8-4"></div>
+    <h3 class="sub-heading">8.4 Routing Decision Flow</h3>
     <div class="diagram-wrapper">
       <span class="diagram-label">Routing Decision Flow by User Tier</span>
       <pre class="mermaid">
@@ -497,12 +766,7 @@ flowchart TD
       </pre>
     </div>
 
-    <div class="callout warning">
-      <span class="callout-label">Architecture Note</span>
-      <p>A 5-second local timeout should <strong>NOT</strong> trigger immediate hosted fallback. Local models need time for longer coaching contexts. The correct escalation path is: <code>retry → queue → warn user (context overflow) → hosted fallback (tier permitting)</code>. This avoids unnecessary hosted API costs and maintains expected local-first behavior.</p>
-    </div>
-
-    <h3 class="sub-heading">8.3 Tier Routing Summary</h3>
+    <h4 class="sub-sub-heading">Tier Routing Summary</h4>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Tier</th><th>Default Model</th><th>Fallback</th><th>% of Traffic</th></tr></thead>
@@ -529,20 +793,81 @@ flowchart TD
       <li><strong>Chess Club / Team Plan:</strong> $49.99/month for up to 10 members — shared insights, coach dashboard, group training</li>
       <li><strong>Individual Coach Partnership:</strong> $19.99/month per coach — client management, AI insight sharing, white-label reports</li>
     </ul>
+    <h4 class="sub-sub-heading">Chess Club / Team Plan — $49.99/month for up to 10 members</h4>
+    <ul>
+      <li>Shared pattern insights across team</li>
+      <li>Coach dashboard for monitoring student progress</li>
+      <li>Group training plans and competitions</li>
+      <li>Admin analytics and reporting</li>
+    </ul>
+    <h4 class="sub-sub-heading">Individual Coach Partnership — $19.99/month per coach</h4>
+    <ul>
+      <li>Client management dashboard</li>
+      <li>Share AI insights with students</li>
+      <li>Progress tracking across student roster</li>
+      <li>White-label coaching reports</li>
+    </ul>
 
     <h3 class="sub-heading">9.2 Institutional Partnerships</h3>
     <ul>
       <li><strong>School / Academy License:</strong> $499+/month — unlimited student accounts, curriculum integration, GDPR features</li>
       <li><strong>National Federation Partnership:</strong> Custom pricing — country-wide deployment, tournament integration, federated learning</li>
     </ul>
+    <h4 class="sub-sub-heading">School / Academy License — $499+/month</h4>
+    <ul>
+      <li>Unlimited student accounts</li>
+      <li>Curriculum integration</li>
+      <li>Progress tracking for teachers</li>
+      <li>GDPR/compliance features</li>
+      <li>Custom branding</li>
+    </ul>
+    <h4 class="sub-sub-heading">National Federation Partnership — Custom pricing</h4>
+    <ul>
+      <li>Country-wide deployment</li>
+      <li>Tournament integration</li>
+      <li>Rating system connectivity</li>
+      <li>Federated learning for national patterns</li>
+    </ul>
 
-    <h3 class="sub-heading">9.3 Content Creator Plans</h3>
+    <h3 class="sub-heading">9.3 Content Creator and Streamer Plans</h3>
     <ul>
       <li><strong>Streamer Tier:</strong> $49.99/month — OBS overlay, chatbot integration, highlight clip generation</li>
       <li><strong>YouTuber / Content Creator:</strong> $29.99/month — bulk analysis, chart generation, script outlines from patterns</li>
     </ul>
+    <h4 class="sub-sub-heading">Streamer Tier — $49.99/month</h4>
+    <ul>
+      <li>OBS overlay with real-time pattern detection</li>
+      <li>Chatbot integration (!coach command)</li>
+      <li>Audience engagement analytics</li>
+      <li>Highlight clip generation</li>
+      <li>Subscriber-only coaching mode</li>
+    </ul>
+    <h4 class="sub-sub-heading">YouTuber / Content Creator — $29.99/month</h4>
+    <ul>
+      <li>Bulk analysis for video content</li>
+      <li>Thumbnail/chart generation</li>
+      <li>Script/outline generation from patterns</li>
+      <li>Community challenge management</li>
+    </ul>
 
-    <h3 class="sub-heading">9.5 Advanced Training Add-Ons</h3>
+    <div id="s9-4"></div>
+    <h3 class="sub-heading">9.4 Tournament and Competition Products</h3>
+    <h4 class="sub-sub-heading">Tournament Preparation Pack — $9.99 per tournament</h4>
+    <ul>
+      <li>Opponent pattern analysis (if in database)</li>
+      <li>Opening preparation for specific opponents</li>
+      <li>Pre-tournament training plan</li>
+      <li>Post-tournament analysis report</li>
+    </ul>
+    <h4 class="sub-sub-heading">Live Tournament Assistance — $19.99/event (future, rules permitting)</h4>
+    <ul>
+      <li>Real-time pattern detection during games</li>
+      <li>Psychological pattern alerts (time pressure, blunder tendency)</li>
+      <li>Post-game immediate analysis</li>
+    </ul>
+
+    <h3 class="sub-heading">9.5 Advanced Training Products</h3>
+    <p>Consolidated add-on pricing across the advanced training product line:</p>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Product</th><th>Pricing</th><th>Value</th></tr></thead>
@@ -555,6 +880,42 @@ flowchart TD
         </tbody>
       </table>
     </div>
+    <h4 class="sub-sub-heading">AI Sparring Partner — $4.99/month add-on</h4>
+    <ul>
+      <li>Play against AI that mimics your weaknesses</li>
+      <li>Deliberate practice in problem positions</li>
+      <li>Adaptive difficulty based on performance</li>
+    </ul>
+    <h4 class="sub-sub-heading">Voice Coaching Module — $7.99/month add-on</h4>
+    <ul>
+      <li>AI-generated voice explanations</li>
+      <li>Listen during commute/exercise</li>
+      <li>Podcast-style improvement series</li>
+    </ul>
+    <h4 class="sub-sub-heading">Opening Mastery Lab — $9.99/month per opening</h4>
+    <ul>
+      <li>Deep repertoire optimization</li>
+      <li>Novelty detection</li>
+      <li>Line-specific pattern analysis</li>
+      <li>Spaced repetition for opening moves</li>
+    </ul>
+
+    <div id="s9-6"></div>
+    <h3 class="sub-heading">9.6 Data and Analytics Products</h3>
+    <h4 class="sub-sub-heading">Advanced Analytics Export — $19.99 one-time or $4.99/month</h4>
+    <ul>
+      <li>Raw game data export (CSV/JSON)</li>
+      <li>Custom analysis with external tools</li>
+      <li>Rating correlation studies</li>
+      <li>Pattern trend analysis</li>
+    </ul>
+    <h4 class="sub-sub-heading">Personal Improvement Roadmap — $29.99 one-time</h4>
+    <ul>
+      <li>6-month structured improvement plan</li>
+      <li>Milestone tracking</li>
+      <li>Personalized study curriculum</li>
+      <li>Progress guarantees (refund if no improvement)</li>
+    </ul>
   </section>
 
   <!-- Section 10 -->
@@ -566,6 +927,8 @@ flowchart TD
     </div>
     <div class="section-divider"></div>
 
+    <div id="s10-1"></div>
+    <h3 class="sub-heading">10.1 ChessRun Is NOT</h3>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Misconception</th><th>Reality</th></tr></thead>
@@ -573,12 +936,13 @@ flowchart TD
           <tr><td><strong>A Stockfish wrapper</strong></td><td>Stockfish is just one layer. Pattern recognition, behavioral analysis, and personalized coaching are the value.</td></tr>
           <tr><td><strong>A generic chess analyzer</strong></td><td>Analysis is commoditized. Pattern-aware, longitudinal coaching is differentiated.</td></tr>
           <tr><td><strong>An AI chatbot</strong></td><td>Not open-ended conversation. Structured chess intelligence delivered conversationally.</td></tr>
-          <tr><td><strong>A generic chatbot without memory</strong></td><td>ChessRun maintains long-term player memory, behavioral history, and coaching continuity across months of play.</td></tr>
+          <tr><td><strong>A generic chatbot (like ChatGPT without memory)</strong></td><td>This framing is acceptable when clarified correctly. ChessRun maintains long-term player memory, behavioral history, and coaching continuity across months of play. The differentiator is not "chess chatbot" but <strong>"persistent conversational chess intelligence"</strong> — a system that knows your patterns, remembers your prior coaching, and tracks your improvement over time.</td></tr>
+          <tr><td><strong>A free analysis tool</strong></td><td>Free tier exists, but sustainable business model enables continued development.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3 class="sub-heading">10.2 What ChessRun IS</h3>
+    <h3 class="sub-heading">10.2 ChessRun IS</h3>
     <div class="callout secondary">
       <span class="callout-label">A Personalized AI Chess Intelligence and Coaching Platform</span>
       <ol>
@@ -590,12 +954,30 @@ flowchart TD
       </ol>
     </div>
 
-    <h3 class="sub-heading">10.3 Positioning Anchors</h3>
+    <h4 class="sub-sub-heading">Positioning Anchors</h4>
     <ul>
       <li>"Like having a personal coach who remembers every game you've ever played"</li>
       <li>"The first chess platform that truly understands YOUR patterns"</li>
       <li>"Not just analysis — personalized intelligence"</li>
       <li>"Improvement through self-awareness, powered by AI"</li>
+    </ul>
+
+    <div id="s10-3"></div>
+    <h3 class="sub-heading">10.3 Brand Communication Guidelines</h3>
+    <h4 class="sub-sub-heading">Always Emphasize</h4>
+    <ul>
+      <li>Improvement and growth</li>
+      <li>Personalization and understanding</li>
+      <li>Pattern awareness</li>
+      <li>Coaching and guidance</li>
+      <li>Long-term journey</li>
+    </ul>
+    <h4 class="sub-sub-heading">Never Emphasize</h4>
+    <ul>
+      <li>AI technology for its own sake</li>
+      <li>Raw engine analysis</li>
+      <li>Chatbot capabilities</li>
+      <li>Token usage or technical implementation</li>
     </ul>
   </section>
 
@@ -609,6 +991,12 @@ flowchart TD
     <div class="section-divider"></div>
 
     <h3 class="sub-heading">11.1 3-Year Revenue Model</h3>
+    <p><strong>Assumptions:</strong></p>
+    <ul>
+      <li>Year 1: 50K total users (40K free, 8K Pro, 2K Elite)</li>
+      <li>Year 2: 200K total users (140K free, 45K Pro, 15K Elite)</li>
+      <li>Year 3: 500K total users (300K free, 150K Pro, 50K Elite)</li>
+    </ul>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Year</th><th>Free Users</th><th>Pro Users</th><th>Elite Users</th><th>MRR</th><th>ARR</th></tr></thead>
@@ -632,6 +1020,7 @@ flowchart TD
         </tbody>
       </table>
     </div>
+    <p><strong>Margin Expansion:</strong> As user base grows, infrastructure utilization improves, driving better margins.</p>
 
     <h3 class="sub-heading">11.3 LTV and CAC Targets</h3>
     <div class="table-wrapper">
@@ -651,7 +1040,7 @@ flowchart TD
     <ul>
       <li><strong>Year 1 — Seed ($500K–1M):</strong> Open Beta development, initial user acquisition, infrastructure setup, team of 3–4</li>
       <li><strong>Year 2 — Series A ($3–5M):</strong> Scale to 200K users, team of 8–12, advanced AI features, enterprise partnerships</li>
-      <li><strong>Year 3 — Series B or Profitability ($10M+ or self-sustaining):</strong> 500K+ users, international expansion, potential acquisition target</li>
+      <li><strong>Year 3 — Series B or Profitability ($10M+ or self-sustaining):</strong> 500K+ users, international expansion, advanced training products, potential acquisition target</li>
     </ul>
   </section>
 
@@ -664,6 +1053,8 @@ flowchart TD
     </div>
     <div class="section-divider"></div>
 
+    <div id="s12-1"></div>
+    <h3 class="sub-heading">12.1 Pricing Rollout Timeline</h3>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code>Month 0-6:   OPEN BETA (Free)
@@ -714,6 +1105,8 @@ Year 2:      EXPANSION
     </div>
     <div class="section-divider"></div>
 
+    <p>ChessRun's pricing and monetization strategy reflects a <strong>sophisticated understanding of both user psychology and AI economics</strong>:</p>
+
     <h3 class="sub-heading">Strategic Pillars</h3>
     <ol>
       <li><strong>Adoption First:</strong> Open Beta builds data foundation and validates product-market fit before monetization</li>
@@ -735,6 +1128,9 @@ Year 2:      EXPANSION
         </tbody>
       </table>
     </div>
+
+    <h3 class="sub-heading">Positioning Clarity</h3>
+    <p>ChessRun is <strong>personalized AI chess intelligence</strong> — not a Stockfish wrapper, not a generic analyzer, not a chatbot. The pricing reflects this: users pay for <strong>improvement, coaching, and self-awareness</strong> — not for AI technology.</p>
 
     <div class="callout secondary">
       <span class="callout-label">Investor Narrative</span>

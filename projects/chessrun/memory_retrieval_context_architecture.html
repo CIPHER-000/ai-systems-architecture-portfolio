@@ -35,12 +35,13 @@
     <li class="toc-item toc-sub"><a href="#s3-2" class="toc-link"><span class="toc-num">3.2</span>Medium-Term Memory</a></li>
     <li class="toc-item toc-sub"><a href="#s3-3" class="toc-link"><span class="toc-num">3.3</span>Long-Term Intelligence</a></li>
     <li class="toc-item toc-sub"><a href="#s3-4" class="toc-link"><span class="toc-num">3.4</span>Semantic Memory</a></li>
-    <li class="toc-item toc-sub"><a href="#s3-5" class="toc-link"><span class="toc-num">3.5</span>Memory Ranking &amp; Pruning</a></li>
+    <li class="toc-item toc-sub"><a href="#s3-5" class="toc-link"><span class="toc-num">3.5</span>Memory Ranking and Pruning</a></li>
     <li class="toc-item"><a href="#s4" class="toc-link"><span class="toc-num">4</span>RAG Architecture</a></li>
-    <li class="toc-item toc-sub"><a href="#s4-1" class="toc-link"><span class="toc-num">4.1</span>Structured Retrieval (SQL)</a></li>
-    <li class="toc-item toc-sub"><a href="#s4-2" class="toc-link"><span class="toc-num">4.2</span>Semantic Retrieval (Vector)</a></li>
-    <li class="toc-item toc-sub"><a href="#s4-3" class="toc-link"><span class="toc-num">4.3</span>Hybrid Retrieval</a></li>
-    <li class="toc-item"><a href="#s5" class="toc-link"><span class="toc-num">5</span>Context Assembly &amp; Prompt Engineering</a></li>
+    <li class="toc-item toc-sub"><a href="#s4-1" class="toc-link"><span class="toc-num">4.1</span>RAG Flow Overview</a></li>
+    <li class="toc-item toc-sub"><a href="#s4-2" class="toc-link"><span class="toc-num">4.2</span>Structured Retrieval (SQL)</a></li>
+    <li class="toc-item toc-sub"><a href="#s4-3" class="toc-link"><span class="toc-num">4.3</span>Semantic Retrieval (Vector)</a></li>
+    <li class="toc-item toc-sub"><a href="#s4-4" class="toc-link"><span class="toc-num">4.4</span>Hybrid Retrieval</a></li>
+    <li class="toc-item"><a href="#s5" class="toc-link"><span class="toc-num">5</span>Context Assembly and Prompt Engineering</a></li>
     <li class="toc-item"><a href="#s6" class="toc-link"><span class="toc-num">6</span>Embedding Strategy</a></li>
     <li class="toc-item"><a href="#s7" class="toc-link"><span class="toc-num">7</span>Chat Memory Architecture</a></li>
     <li class="toc-item"><a href="#s8" class="toc-link"><span class="toc-num">8</span>SQL vs Vector Responsibilities</a></li>
@@ -81,6 +82,25 @@
     <p><strong>Key Principle:</strong> The LLM never invents chess truth. Stockfish provides objective analysis. The retrieval system assembles contextual intelligence. The LLM explains, personalizes, and coaches.</p>
   </div>
 
+  <!-- Source status caveats: quoted from the markdown source, published as its own recorded status -->
+  <div class="callout info">
+    <span class="callout-label">Source Status — Target Design, Not As-Built</span>
+    <p>The source document records its own status, verified 2026-09-24, in its own words — published here so it is met before the layers it qualifies:</p>
+    <blockquote>
+      <p>⚠️ <strong>Doc vs reality (verified 2026-09-24):</strong> this document specifies the <em>target</em> design and is <strong>not</strong> a description of what is built. Notable differences: <code class="inline">move_timing_data</code> (diagrammed below) <strong>does not exist</strong> and no per-move clock data is ingested; there is <strong>no per-move table</strong> (moves live in JSON on <code class="inline">game_analyses</code>); the <code class="inline">HallucinationGuard</code> / <code class="inline">CONSTRAINED_SYSTEM_PROMPT</code> of §9.3 <strong>have no implementation</strong>; and retrieval does run on pgvector + HNSW (migration <code class="inline">0013</code>) but with <strong>no relevance floor</strong>. For the as-built picture, see <code class="inline">../audit/player-intelligence-phase1-audit.md</code>; for the forward design, <a href="player_intelligence_architecture.html">PLAYER_INTELLIGENCE_ARCHITECTURE.md</a>.</p>
+    </blockquote>
+    <p>The source's audit document is not published in this document suite, so its path is shown as code rather than as a link; the forward-design document is published here as the linked page. This caveat qualifies the storage and retrieval layers in §2 and §3 — the <code class="inline">move_timing_data</code> node in the three-tier diagram, the per-move table, and the absence of a relevance floor on retrieval — and §9 in particular: the constrained system prompt (§9.2) and the post-generation verification layer (§9.3) are specified here as the target design and are recorded by the source as having no implementation. Nothing in §9 is retracted: this page states the intended architecture, and this callout states what the source records as as-built.</p>
+  </div>
+
+  <div class="callout secondary">
+    <span class="callout-label">Source Scope Note — MVP UX Authority</span>
+    <p>The source document also records a scope caveat, in its own words:</p>
+    <blockquote>
+      <p><strong>MVP UX authority:</strong> <code class="inline">../product/CHESSRUN_MVP_UX.md</code> defines the current launch experience. Retrieval should assemble context for coaching conversations and the collapsible Playing Profile; standalone reports and analytics dashboards are future-facing.</p>
+    </blockquote>
+    <p>That qualifies the aggregates described in §8.1 — Playing Profile summary, improvement signals, and operational usage metrics: they feed coaching conversations and the Playing Profile, while standalone reports and analytics dashboards are future-facing.</p>
+  </div>
+
   <!-- Section 1 -->
   <section class="section-block">
     <div id="s1" class="section-anchor"></div>
@@ -89,6 +109,9 @@
       <h2 class="section-title">Core Principle: Structured AI Coaching, Not Generic Chatbot</h2>
     </div>
     <div class="section-divider"></div>
+
+    <h3 class="sub-heading">1.1 What ChessRun Is NOT</h3>
+    <p>ChessRun is fundamentally different from generic AI chatbots:</p>
 
     <div class="table-wrapper">
       <table>
@@ -104,8 +127,9 @@
     </div>
 
     <h3 class="sub-heading">1.2 The Grounding Principle</h3>
+    <p>ChessRun fetches game data from Chess.com on-demand or via periodic sync. ChessRun is <strong>not</strong> attempting to replicate Chess.com's archival infrastructure — its purpose is to derive persistent coaching intelligence from that raw game data, not to duplicate it.</p>
     <ul>
-      <li><strong>Chess.com</strong> is the external source of raw game data: PGNs, ratings, timestamps, metadata</li>
+      <li><strong>Chess.com</strong> is the external source of raw game data: historical games, PGNs, move history, ratings, timestamps, game URLs and opponent information</li>
       <li><strong>Stockfish</strong> is the source of objective chess truth: position evaluation, best moves, tactical detection</li>
       <li><strong>The LLM's constrained role:</strong> Explain Stockfish output, personalize to player level, summarize patterns, generate recommendations, manage conversational flow</li>
     </ul>
@@ -274,10 +298,35 @@ CREATE INDEX idx_semantic_user_type ON semantic_memory (user_id, memory_type);</
           <tr><td>Inference result cache</td><td>Key-Value</td><td>5 min</td></tr>
           <tr><td>Active AI context</td><td>Hash</td><td>1 hour</td></tr>
           <tr><td>Rate limiting counters</td><td>Sorted Sets</td><td>1 min</td></tr>
+          <tr><td>Polling state</td><td>Hash</td><td>15 min</td></tr>
           <tr><td>Embedding cache</td><td>Key-Value</td><td>1 hour</td></tr>
           <tr><td>Chat session warm-up</td><td>Hash</td><td>30 min</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <h4 class="sub-sub-heading">Redis Schema Examples</h4>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-text"># Inference cache
+KEY: inference_cache:{user_id}:{query_hash}
+VALUE: {response, tokens_used, model}
+TTL: 300s
+
+# Active chat context
+KEY: chat_context:{session_id}
+VALUE: {
+  user_id: 123,
+  last_patterns: [456, 789],
+  recent_games: [111, 222],
+  conversation_turns: 7
+}
+TTL: 3600s
+
+# Rate limiting
+KEY: rate_limit:{user_id}:{endpoint}
+VALUE: {count, window_start}
+TTL: 60s</code></pre>
     </div>
   </section>
 
@@ -330,7 +379,7 @@ flowchart TB
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class ShortTermMemory:
-    def recent_window(self, context: ChatContext, n: int = 7) -> List[ChatMessage]:
+    def recent_window(self, context: ChatContext, n: int = 7) -&gt; List[ChatMessage]:
         """The 7 most recent messages before the current turn."""
         return context.get_recent_messages(n)[:-1]</code></pre>
     </div>
@@ -342,11 +391,11 @@ flowchart TB
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class MediumTermMemory:
-    def retrieve_active_patterns(self, user_id: int, days: int = 30) -> List[Pattern]:
+    def retrieve_active_patterns(self, user_id: int, days: int = 30) -&gt; List[Pattern]:
         return self.db.query("""
             SELECT * FROM player_patterns
             WHERE user_id = %s
-              AND last_seen_at > NOW() - INTERVAL '%s days'
+              AND last_seen_at &gt; NOW() - INTERVAL '%s days'
               AND severity IN ('critical', 'significant')
             ORDER BY confidence_score DESC, occurrence_count DESC
             LIMIT 5
@@ -384,36 +433,36 @@ class PlayerProfile:
     # to permissive (0.0); relevance comes from ordering, not hard cutoffs.
     DEFAULT_CONTENT_TYPES = ['pattern', 'coaching']
 
-    def retrieval_limit(self, content_types: List[str]) -> int:
-        """Top-k scales with the number of slices searched: 5 base -> 8 for both."""
+    def retrieval_limit(self, content_types: List[str]) -&gt; int:
+        """Top-k scales with the number of slices searched: 5 base -&gt; 8 for both."""
         return 5 + 3 * max(0, len(content_types or []) - 1)
 
     async def retrieve_similar_memories(
         self, user_id: int, query: str,
         content_types: List[str] = DEFAULT_CONTENT_TYPES,
         limit: int = 8,
-    ) -> List[SemanticMemory]:
+    ) -&gt; List[SemanticMemory]:
         # 1. Generate query embedding
         query_embedding = await self.embedder.embed(query)
 
         # 2. Vector similarity search (Gemini gemini-embedding-001, 768 dims)
         return await self.db.query("""
             SELECT id, memory_type, content_summary, metadata,
-                   1 - (embedding <=> %s::vector) as similarity_score
+                   1 - (embedding &lt;=&gt; %s::vector) as similarity_score
             FROM semantic_memory
             WHERE user_id = %s AND memory_type = ANY(%s)
-            ORDER BY embedding <=> %s::vector
+            ORDER BY embedding &lt;=&gt; %s::vector
             LIMIT %s
         """, (query_embedding, user_id, content_types, query_embedding, limit))</code></pre>
     </div>
 
     <div id="s3-5"></div>
-    <h3 class="sub-heading">3.5 Memory Ranking &amp; Pruning</h3>
+    <h3 class="sub-heading">3.5 Memory Ranking and Pruning</h3>
     <p><strong>Shipped today:</strong> ranking is the vector store's similarity order (§3.4). The composite ranker below is a planned refinement layered on top of that order:</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class MemoryRanker:
-    def rank_memories(self, query, memories, profile) -> List[RankedMemory]:
+    def rank_memories(self, query, memories, profile) -&gt; List[RankedMemory]:
         ranked = []
         for memory in memories:
             score = 0.0
@@ -452,6 +501,8 @@ class PlayerProfile:
 
     <p>ChessRun's RAG system is <strong>domain-specific structured retrieval</strong>, not generic document search.</p>
 
+    <div id="s4-1"></div>
+    <h3 class="sub-heading">4.1 RAG Flow Overview</h3>
     <div class="diagram-wrapper">
       <span class="diagram-label">Full RAG Pipeline: Query → Retrieval → Generation → Storage</span>
       <pre class="mermaid">
@@ -507,12 +558,12 @@ flowchart TB
       </pre>
     </div>
 
-    <div id="s4-1"></div>
+    <div id="s4-2"></div>
     <h3 class="sub-heading">4.2 Structured Retrieval (SQL Layer)</h3>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class StructuredRetriever:
-    def retrieve_relevant_patterns(self, user_id: int, intent: Intent) -> List[Pattern]:
+    def retrieve_relevant_patterns(self, user_id: int, intent: Intent) -&gt; List[Pattern]:
         keywords = intent.extract_keywords()
         return self.db.query("""
             SELECT * FROM player_patterns
@@ -522,7 +573,7 @@ flowchart TB
                 OR pattern_subtype ILIKE ANY(%s)
                 OR pattern_description ILIKE ANY(%s)
               )
-              AND confidence_score > 0.6
+              AND confidence_score &gt; 0.6
             ORDER BY
               CASE severity
                 WHEN 'critical' THEN 1
@@ -534,7 +585,7 @@ flowchart TB
         """, (user_id, intent.pattern_types, keywords, keywords))</code></pre>
     </div>
 
-    <div id="s4-2"></div>
+    <div id="s4-3"></div>
     <h3 class="sub-heading">4.3 Semantic Retrieval (Vector Layer)</h3>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
@@ -544,18 +595,18 @@ flowchart TB
     # only enable deeper grounding (dated chronology) for recall questions.
     DEFAULT_CONTENT_TYPES = ['pattern', 'coaching']
 
-    def retrieval_scope(self, intent: Intent) -> Tuple[List[str], int]:
+    def retrieval_scope(self, intent: Intent) -&gt; Tuple[List[str], int]:
         content_types = self.DEFAULT_CONTENT_TYPES
         # top-k scales with slices searched: 8 when both are searched
         return content_types, 5 + 3 * (len(content_types) - 1)</code></pre>
     </div>
 
-    <div id="s4-3"></div>
+    <div id="s4-4"></div>
     <h3 class="sub-heading">4.4 Hybrid Retrieval Strategy</h3>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class HybridRetriever:
-    async def retrieve_context(self, user_id: int, query: str) -> CoachContext:
+    async def retrieve_context(self, user_id: int, query: str) -&gt; CoachContext:
         # Parallel execution
         structured, semantic, profile, history = await asyncio.gather(
             self.structured.retrieve(user_id, query),
@@ -580,7 +631,7 @@ flowchart TB
     <div id="s5" class="section-anchor"></div>
     <div class="section-heading">
       <span class="section-ghost-num">5</span>
-      <h2 class="section-title">Context Assembly &amp; Prompt Engineering</h2>
+      <h2 class="section-title">Context Assembly and Prompt Engineering</h2>
     </div>
     <div class="section-divider"></div>
 
@@ -617,6 +668,8 @@ sequenceDiagram
     PA->>PA: Assemble layered context (memories, summary, record, window)
     PA->>LLM: Send contextualized prompt
     LLM-->>PA: Coaching response
+
+    PA-->>API: Return response + citations
     PA-->>U: "I see a critical pattern: you convert only 45% of winning endgames..."
       </pre>
     </div>
@@ -625,7 +678,7 @@ sequenceDiagram
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class PromptAssembler:
-    def assemble(self, context: CoachContext, query: str, recall: bool = False) -> Prompt:
+    def assemble(self, context: CoachContext, query: str, recall: bool = False) -&gt; Prompt:
         sections = []
 
         # 1. System prompt: coaching rules + grounding rules +
@@ -660,11 +713,69 @@ sequenceDiagram
         return Prompt(content="\n\n".join(sections))</code></pre>
     </div>
 
-    <h3 class="sub-heading">5.3 Example: "Why do I keep losing winning positions?"</h3>
+    <h3 class="sub-heading">5.3 Example Use Case: “Why do I keep losing winning positions?”</h3>
+    <p><strong>User Query:</strong> "Why do I keep losing winning positions?"</p>
+
+    <p><strong>Retrieval Results — Structured (SQL):</strong></p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "patterns": [
+    {
+      "name": "Rook Endgame Technique",
+      "severity": "critical",
+      "confidence": 0.89,
+      "occurrences": 14,
+      "description": "Missed winning rook endgame conversions due to passive king placement"
+    },
+    {
+      "name": "Time Pressure Collapse",
+      "severity": "significant",
+      "confidence": 0.76,
+      "occurrences": 8,
+      "description": "Blunder rate increases 4x when under 30 seconds"
+    }
+  ],
+  "recent_games": [
+    {
+      "id": 12345,
+      "result": "loss",
+      "acpl": 85,
+      "phase_blunders": {"endgame": 3}
+    }
+  ],
+  "timing": {
+    "time_pressure_ratio": 0.32,
+    "endgame_time_ratio": 0.15
+  }
+}</code></pre>
+    </div>
+
+    <p><strong>Retrieval Results — Semantic (Vector):</strong></p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "memories": [
+    {
+      "type": "coaching",
+      "content": "Previous coaching on converting material advantage in endgames",
+      "similarity": 0.87
+    },
+    {
+      "type": "game_summary",
+      "content": "Game where player was +5 but lost due to time pressure",
+      "similarity": 0.82
+    }
+  ]
+}</code></pre>
+    </div>
+
+    <p><strong>Final AI Response:</strong></p>
     <div class="callout secondary">
       <span class="callout-label">AI Coach Response Example</span>
       <p>"I see a critical pattern affecting 42% of your recent games: <strong>Rook Endgame Technique</strong>. You've had 14 missed conversions in winning rook endgames, primarily due to passive king placement and hesitation when converting material advantage.</p>
       <p>Combined with your <strong>Time Pressure Collapse</strong> pattern (blunder rate increases 4× under 30 seconds), you're often rushing the conversion phase.</p>
+      <p>In your last game against @opponent, you reached a +5 position but lost 3 endgame tempi and eventually flagged. The engine shows you missed a simple rook lift that would have won immediately.</p>
       <p><strong>Recommendation:</strong> Practice the 'Lucena Position' and 'Philidor Position' daily. Target: 70%+ conversion rate from winning endgames."</p>
     </div>
   </section>
@@ -678,11 +789,47 @@ sequenceDiagram
     </div>
     <div class="section-divider"></div>
 
+    <h3 class="sub-heading">6.1 Embedding Generation Pipeline</h3>
+    <div class="diagram-wrapper">
+      <span class="diagram-label">Embedding Pipeline: Source → Extract → Summarize → Chunk → Embed → Store</span>
+      <pre class="mermaid">
+flowchart LR
+    SOURCE[Source Content]
+    subgraph Pipeline["Embedding Pipeline"]
+        EXTRACT[Content Extractor]
+        SUMMARIZE[Summarizer]
+        CHUNK[Chunker]
+        EMBED[Embedding Generator]
+        STORE[Vector Store]
+    end
+    METADATA[Metadata Attach]
+    SOURCE --> EXTRACT
+    EXTRACT --> SUMMARIZE
+    SUMMARIZE --> CHUNK
+    CHUNK --> EMBED
+    EMBED --> STORE
+    EXTRACT -.-> METADATA
+    METADATA -.-> STORE
+      </pre>
+    </div>
+
     <h3 class="sub-heading">6.2 Summarization Before Embedding</h3>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class SummarizationService:
-    def summarize_pattern(self, pattern: Pattern) -> str:
+    def summarize_for_embedding(self, content: Content) -&gt; str:
+        """Create semantic summary optimized for retrieval."""
+
+        if content.type == 'pattern':
+            return self.summarize_pattern(content)
+
+        elif content.type == 'game':
+            return self.summarize_game(content)
+
+        # Coaching exchanges skip this service entirely — each completed
+        # exchange is compressed by the chat-memory pipeline (§6.3).
+
+    def summarize_pattern(self, pattern: Pattern) -&gt; str:
         return f"""
 Player weakness in {pattern.pattern_type}: {pattern.pattern_subtype}.
 Affects {pattern.affected_games_ratio:.0%} of games with {pattern.confidence_score:.0%} confidence.
@@ -691,7 +838,7 @@ Seen {pattern.occurrence_count} times from {pattern.first_seen_at} to {pattern.l
 Trend: {pattern.trend_direction}. Recommended training: {pattern.recommended_drill_type}.
 """.strip()
 
-    def summarize_game(self, game: Game, analysis: GameAnalysis) -> str:
+    def summarize_game(self, game: Game, analysis: GameAnalysis) -&gt; str:
         return f"""
 {game.result} against {game.opponent_rating} rated opponent.
 Opening: {analysis.opening_name} ({analysis.opening_eco}).
@@ -700,15 +847,35 @@ Phase performance: Opening {analysis.phase_scores.opening}%, Middlegame {analysi
 """.strip()</code></pre>
     </div>
 
-    <h3 class="sub-heading">6.3 Chunking Strategy</h3>
+    <h3 class="sub-heading">6.3 Exchange Compression (No Chunking)</h3>
+    <p><strong>Conversations are not chunked — each completed exchange becomes exactly one memory.</strong> Chunking raw conversations was considered and dropped: it produced overlapping, low-signal vectors. The shipped unit of conversational memory is the single user→assistant pair, compressed deterministically:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python">def compress_exchange(
+    user_message: str,
+    coach_message: str,
+    date: datetime,
+) -&gt; str:
+    """One exchange -&gt; one dated memory sentence, ready to embed."""
+    user_text = collapse_whitespace(user_message)[:220]
+    coach_text = collapse_whitespace(coach_message)[:320]
+    return (
+        f"Coaching exchange ({date:%Y-%m-%d}). "
+        f"Player asked: {user_text} | Coach: {coach_text}"
+    )</code></pre>
+    </div>
+    <p>Deterministic content ids (<code class="inline">md5(session_id + ":" + user_message_index)</code>) make re-runs idempotent — no chunk bookkeeping, no duplicates.</p>
+
+    <h4 class="sub-sub-heading">Chunking Strategy (Prototyped, Superseded)</h4>
+    <p>Retained for reference: generic conversation chunking was prototyped and dropped in favour of the one-memory-per-exchange compression above.</p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class ConversationChunker:
-    def chunk_conversation(self, messages: List[Message], chunk_size: int = 512) -> List[Chunk]:
+    def chunk_conversation(self, messages: List[Message], chunk_size: int = 512) -&gt; List[Chunk]:
         chunks, current_chunk, current_tokens = [], [], 0
         for i, msg in enumerate(messages):
             msg_tokens = self.estimate_tokens(msg.content)
-            if current_tokens + msg_tokens > chunk_size or self.is_topic_shift(messages, i):
+            if current_tokens + msg_tokens &gt; chunk_size or self.is_topic_shift(messages, i):
                 if current_chunk:
                     chunks.append(self.create_chunk(current_chunk))
                 current_chunk, current_tokens = [msg], msg_tokens
@@ -720,7 +887,8 @@ Phase performance: Opening {analysis.phase_scores.opening}%, Middlegame {analysi
         return chunks</code></pre>
     </div>
 
-    <h3 class="sub-heading">6.4 Embedding Lifecycle Management</h3>
+    <h3 class="sub-heading">6.4 Embedding Refresh and Re-indexing</h3>
+    <p><strong>Embeddings become stale as patterns evolve:</strong></p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class EmbeddingLifecycleManager:
@@ -730,7 +898,7 @@ Phase performance: Opening {analysis.phase_scores.opening}%, Middlegame {analysi
             SELECT p.* FROM player_patterns p
             LEFT JOIN semantic_memory sm ON p.id = sm.source_id
             WHERE p.user_id = %s
-              AND (sm.id IS NULL OR p.updated_at > sm.created_at)
+              AND (sm.id IS NULL OR p.updated_at &gt; sm.created_at)
         """, (user_id,))
         for pattern in updated_patterns:
             summary = self.summarizer.summarize_pattern(pattern)
@@ -743,10 +911,10 @@ Phase performance: Opening {analysis.phase_scores.opening}%, Middlegame {analysi
         await self.db.execute("""
             DELETE FROM semantic_memory
             WHERE user_id = %s AND memory_type = 'pattern'
-              AND created_at < NOW() - INTERVAL '%s days'
+              AND created_at &lt; NOW() - INTERVAL '%s days'
               AND source_id NOT IN (
                 SELECT id FROM player_patterns
-                WHERE user_id = %s AND last_seen_at > NOW() - INTERVAL '90 days'
+                WHERE user_id = %s AND last_seen_at &gt; NOW() - INTERVAL '90 days'
               )
         """, (user_id, max_age_days, user_id))</code></pre>
     </div>
@@ -805,11 +973,11 @@ CREATE INDEX idx_chat_sessions_user_updated
   1. process_message persists the exchange into chat_sessions.context_json
   2. fire-and-forget schedule call (TESTING-guarded, exception-safe)
   3. Redis SET NX debounce per session (TTL 300s, 30s countdown)
-     -> Celery 'analysis' queue -> extract_chat_memories_task
+     -&gt; Celery 'analysis' queue -&gt; extract_chat_memories_task
 
   The task runs two idempotent jobs:
   A. Exchange memories (sync_session_chat_memories)
-     each user/assistant pair -> ONE dated memory sentence
+     each user/assistant pair -&gt; ONE dated memory sentence
      "Coaching exchange (YYYY-MM-DD). Player asked: ... | Coach: ..."
      upserted into semantic_memory['coaching'] keyed by
      md5(session_id + ":" + user_message_index)
@@ -873,6 +1041,7 @@ CREATE INDEX idx_chat_sessions_user_updated
     </div>
     <div class="section-divider"></div>
 
+    <h3 class="sub-heading">8.1 Clear Responsibility Separation</h3>
     <div class="diagram-wrapper">
       <span class="diagram-label">SQL vs Vector: Clear Separation of Concerns</span>
       <pre class="mermaid">
@@ -903,6 +1072,140 @@ flowchart TB
         </tbody>
       </table>
     </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Responsibility</th><th>Owns</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td><strong>SQL — Transactional Truth</strong></td><td>Records that must be exact and durable</td><td>User subscriptions · Game results · Payment records</td></tr>
+          <tr><td><strong>SQL — Structured Filtering</strong></td><td>Exact predicates over indexed columns</td><td>Find all <code class="inline">'critical'</code> patterns · Games from the last 30 days · Patterns by type</td></tr>
+          <tr><td><strong>SQL — Coaching Aggregates</strong></td><td>Counting, averaging, trend math</td><td>Playing Profile summary · Improvement signals · Operational usage metrics</td></tr>
+          <tr><td><strong>SQL — Relational Integrity</strong></td><td>Ownership, keys and cascade rules</td><td>User owns Games · Pattern belongs to User · Chat belongs to Session</td></tr>
+          <tr><td><strong>Vector — Semantic Similarity</strong></td><td>Meaning-based nearest neighbours</td><td>Find similar coaching moments · Conceptually related patterns · Analogous situations</td></tr>
+          <tr><td><strong>Vector — Contextual Retrieval</strong></td><td>Prior explanations of the same concept</td><td>Related weakness patterns · Similar game situations</td></tr>
+          <tr><td><strong>Vector — Memory Search</strong></td><td>Recall over what was said before</td><td>What did the coach say about endgames? · Have we discussed this before?</td></tr>
+          <tr><td><strong>Vector — Meaning-Based Matching</strong></td><td>Synonym and paraphrase tolerance</td><td>'Conversion' ≈ 'Winning technique' · 'Blunder' ≈ 'Mistake' ≈ 'Error'</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-heading">8.2 When to Use SQL</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python"># Use SQL when:
+
+# 1. Exact filtering needed
+await db.query("""
+    SELECT * FROM games
+    WHERE user_id = %s
+      AND result = 'loss'
+      AND played_at &gt; NOW() - INTERVAL '7 days'
+""")
+
+# 2. Aggregations and analytics
+await db.query("""
+    SELECT
+        pattern_type,
+        COUNT(*) as count,
+        AVG(confidence_score) as avg_confidence
+    FROM player_patterns
+    WHERE user_id = %s
+    GROUP BY pattern_type
+""")
+
+# 3. Relational joins
+await db.query("""
+    SELECT g.*, ga.acpl
+    FROM games g
+    JOIN game_analyses ga ON g.id = ga.game_id
+    JOIN player_patterns pp ON g.user_id = pp.user_id
+    WHERE pp.pattern_type = 'endgame'
+      AND g.user_id = %s
+""")
+
+# 4. Time-series queries
+await db.query("""
+    SELECT DATE(played_at), COUNT(*)
+    FROM games
+    WHERE user_id = %s
+    GROUP BY DATE(played_at)
+    ORDER BY DATE(played_at)
+""")</code></pre>
+    </div>
+
+    <h3 class="sub-heading">8.3 When to Use Vector Search</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python"># Use Vector Search when:
+
+# 1. Finding conceptually similar content
+similar_memories = await vector_db.search(
+    user_id=user_id,
+    query="I keep messing up endgames",
+    memory_types=['coaching', 'pattern'],
+    top_k=5
+)
+
+# 2. Retrieving prior explanations of similar concepts
+prior_coaching = await vector_db.search(
+    user_id=user_id,
+    query="How do I convert winning positions?",
+    memory_types=['coaching'],
+    top_k=3
+)
+
+# 3. Discovering non-obvious connections
+related_patterns = await vector_db.search(
+    user_id=user_id,
+    query="time management and blunder correlation",
+    memory_types=['pattern', 'behavioral'],
+    top_k=5
+)
+
+# 4. Semantic filtering (concepts, not keywords)
+relevant_games = await vector_db.search(
+    user_id=user_id,
+    query="games where I had material advantage but lost",
+    memory_types=['game_summary'],
+    top_k=5
+)</code></pre>
+    </div>
+
+    <h3 class="sub-heading">8.4 Hybrid Query Examples</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python">class HybridQueryEngine:
+    async def find_relevant_coaching(
+        self,
+        user_id: int,
+        topic: str,
+        recency_days: int = 30
+    ) -&gt; List[RelevantCoaching]:
+        """Find relevant coaching using both SQL and vector search."""
+
+        # Step 1: Vector search for semantic similarity
+        semantic_matches = await self.vector_db.search(
+            user_id=user_id,
+            query=topic,
+            memory_types=['coaching', 'pattern'],
+            top_k=20
+        )
+
+        # Step 2: SQL filter for recency and severity
+        pattern_ids = [m.source_id for m in semantic_matches if m.source_id]
+
+        recent_patterns = await self.db.query("""
+            SELECT * FROM player_patterns
+            WHERE id = ANY(%s)
+              AND user_id = %s
+              AND last_seen_at &gt; NOW() - INTERVAL '%s days'
+              AND severity IN ('critical', 'significant')
+            ORDER BY confidence_score DESC
+            LIMIT 5
+        """, (pattern_ids, user_id, recency_days))
+
+        return recent_patterns</code></pre>
+    </div>
   </section>
 
   <!-- Section 9 -->
@@ -914,7 +1217,41 @@ flowchart TB
     </div>
     <div class="section-divider"></div>
 
-    <h3 class="sub-heading">9.1 The Grounding Architecture</h3>
+    <h3 class="sub-heading">9.1 The Grounding Principle</h3>
+    <p>ChessRun enforces a <strong>strict boundary</strong> between chess truth (Stockfish) and AI explanation (LLM):</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-text">┌─────────────────────────────────────────────────────────────┐
+│                    CHESS TRUTH LAYER                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  Stockfish   │  │    PGN       │  │   FEN        │     │
+│  │  Evaluation  │  │   Parser     │  │  Validator   │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼  (Verified Data Only)
+┌─────────────────────────────────────────────────────────────┐
+│                  RETRIEVAL LAYER                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │   Pattern    │  │   Game       │  │   Player     │     │
+│  │    Store     │  │   Database   │  │   Profile    │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼  (Structured Context)
+┌─────────────────────────────────────────────────────────────┐
+│               EXPLANATION LAYER (LLM)                       │
+│                                                             │
+│  • Explains Stockfish evaluations in human terms           │
+│  • Personalizes to player level and style                  │
+│  • Summarizes longitudinal patterns                         │
+│  • Generates recommendations                               │
+│                                                             │
+│  🚫 NEVER invents position evaluations                    │
+│  🚫 NEVER suggests moves without engine verification        │
+│  🚫 NEVER invents pattern statistics                        │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+    </div>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Layer</th><th>Role</th><th>Never Does</th></tr></thead>
@@ -926,7 +1263,8 @@ flowchart TB
       </table>
     </div>
 
-    <h3 class="sub-heading">9.2 Constrained System Prompt</h3>
+    <h3 class="sub-heading">9.2 Constrained Prompting</h3>
+    <p><strong>Prompts are structured to prevent hallucination:</strong></p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">CONSTRAINED_SYSTEM_PROMPT = """
@@ -945,11 +1283,15 @@ Stockfish handles all position evaluation.
 """</code></pre>
     </div>
 
-    <h3 class="sub-heading">9.3 Post-Generation Verification Layer</h3>
+    <h3 class="sub-heading">9.3 Verification Layer</h3>
+    <p><strong>Post-generation verification for critical claims:</strong></p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class HallucinationGuard:
-    async def verify_response(self, response: str, context: CoachContext) -> VerificationResult:
+    def __init__(self, stockfish_client: StockfishClient):
+        self.stockfish = stockfish_client
+
+    async def verify_response(self, response: str, context: CoachContext) -&gt; VerificationResult:
         issues = []
 
         # 1. Verify evaluation claims
@@ -983,7 +1325,7 @@ Stockfish handles all position evaluation.
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class ChessOperations:
-    async def analyze_position(self, fen: str) -> PositionAnalysis:
+    async def analyze_position(self, fen: str) -&gt; PositionAnalysis:
         """Always use Stockfish, never LLM, for position analysis."""
         evaluation = await self.stockfish.evaluate(fen, depth=20)
         best_move  = await self.stockfish.get_best_move(fen, time_ms=1000)
@@ -1021,7 +1363,7 @@ Stockfish handles all position evaluation.
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class RetrievalOptimizer:
-    async def fast_retrieve(self, user_id: int, query: str) -> CoachContext:
+    async def fast_retrieve(self, user_id: int, query: str) -&gt; CoachContext:
         cache_key = f"context:{user_id}:{hash(query)}"
 
         # 1. Check cache first
@@ -1044,7 +1386,18 @@ Stockfish handles all position evaluation.
 
         # 3. Cache for 5 minutes
         await self.cache.set(cache_key, context.serialize(), ttl=300)
-        return context</code></pre>
+        return context
+
+    async def get_profile_cached(self, user_id: int) -&gt; PlayerProfile:
+        """Profile cached in Redis."""
+        key = f"profile:{user_id}"
+        cached = await self.cache.get(key)
+        if cached:
+            return PlayerProfile.deserialize(cached)
+
+        profile = await self.db.get_profile(user_id)
+        await self.cache.set(key, profile.serialize(), ttl=1800)  # 30 min
+        return profile</code></pre>
     </div>
 
     <h3 class="sub-heading">10.3 Indexing Strategies</h3>
@@ -1066,10 +1419,46 @@ ON player_patterns (user_id, severity, confidence_score DESC);
 -- Partial index for hot data (recent 90 days)
 CREATE INDEX idx_recent_patterns
 ON player_patterns (user_id, last_seen_at)
-WHERE last_seen_at > NOW() - INTERVAL '90 days';</code></pre>
+WHERE last_seen_at &gt; NOW() - INTERVAL '90 days';</code></pre>
     </div>
 
-    <h3 class="sub-heading">10.5 GPU Batching for Local LLM Inference</h3>
+    <h3 class="sub-heading">10.4 Inference Optimization</h3>
+    <p><strong>Batched embedding generation:</strong></p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-python">class BatchedEmbedder:
+    def __init__(self, batch_size: int = 32):
+        self.batch_size = batch_size
+        self.queue = []
+
+    async def embed(self, text: str) -&gt; List[float]:
+        """Queue for batch processing."""
+        future = asyncio.Future()
+        self.queue.append((text, future))
+
+        if len(self.queue) &gt;= self.batch_size:
+            await self.process_batch()
+
+        return await future
+
+    async def process_batch(self):
+        """Process queued texts in batch."""
+        batch = self.queue[:self.batch_size]
+        self.queue = self.queue[self.batch_size:]
+
+        texts = [item[0] for item in batch]
+        futures = [item[1] for item in batch]
+
+        # Single API call for batch
+        embeddings = await self.embedding_api.embed_batch(texts)
+
+        # Resolve futures
+        for future, embedding in zip(futures, embeddings):
+            future.set_result(embedding)</code></pre>
+    </div>
+
+    <h3 class="sub-heading">10.5 GPU Interaction and Batching</h3>
+    <p><strong>Local LLM inference optimization:</strong></p>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
       <pre><code class="language-python">class OptimizedLLMClient:
@@ -1083,7 +1472,7 @@ WHERE last_seen_at > NOW() - INTERVAL '90 days';</code></pre>
 
     async def generate_coaching_responses(
         self, requests: List[CoachRequest]
-    ) -> List[CoachingResponse]:
+    ) -&gt; List[CoachingResponse]:
         outputs = self.llm.generate(
             [req.prompt for req in requests],
             sampling_params=vllm.SamplingParams(temperature=0.7, max_tokens=1024)
@@ -1111,6 +1500,7 @@ WHERE last_seen_at > NOW() - INTERVAL '90 days';</code></pre>
       <li><strong>Multi-Horizon Memory</strong> — Short-term (session), medium-term (30–90 days), long-term (archetype), semantic (cross-history)</li>
     </ol>
 
+    <h3 class="sub-heading">Technical Differentiation</h3>
     <div class="table-wrapper">
       <table>
         <thead><tr><th>Generic RAG</th><th>ChessRun Structured RAG</th></tr></thead>
@@ -1132,6 +1522,17 @@ WHERE last_seen_at > NOW() - INTERVAL '90 days';</code></pre>
       <li><strong>Caching Layer:</strong> Redis reduces retrieval latency by 80%+</li>
       <li><strong>Inference Layer:</strong> vLLM batching handles 100+ concurrent users per GPU</li>
     </ul>
+
+    <h3 class="sub-heading">Implementation Readiness</h3>
+    <p>This architecture is <strong>production-ready</strong> with:</p>
+    <ul>
+      <li>Complete schema definitions</li>
+      <li>Query optimization strategies</li>
+      <li>Caching and batching patterns</li>
+      <li>Hallucination mitigation layers</li>
+      <li>Scaling roadmaps for 1K → 100K+ users</li>
+    </ul>
+    <p>ChessRun is <strong>not a generic chatbot with chess knowledge</strong> — it is a <strong>structured chess intelligence system</strong> that leverages semantic retrieval and conversational AI to deliver personalized coaching grounded in verified analysis.</p>
   </section>
 
 </div>
