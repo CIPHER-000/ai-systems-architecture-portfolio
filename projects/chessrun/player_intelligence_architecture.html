@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Intelligence Architecture — ChessRun Docs</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+<script defer data-domain="chessrun-docs.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script><script type="text/javascript" src="https://tiiny.host/ad-script.js"></script></head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <a href="../../index.html" class="topbar-portfolio">← Portfolio</a>
+    <a href="index.html" class="topbar-brand">ChessRun</a>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-title">Architecture</span>
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation">&#9776;</button>
+  </div>
+</header>
+
+<div class="sidebar-overlay"></div>
+
+<nav class="sidebar" aria-label="Table of contents">
+  <span class="toc-label">Contents</span>
+  <ul class="toc-list">
+    <li class="toc-item"><a href="#s1" class="toc-link"><span class="toc-num">1</span>Purpose and Principles</a></li>
+    <li class="toc-item"><a href="#s2" class="toc-link"><span class="toc-num">2</span>The Intelligence Loop</a></li>
+    <li class="toc-item"><a href="#s3" class="toc-link"><span class="toc-num">3</span>Layer 1 — Move Facts</a></li>
+    <li class="toc-item"><a href="#s4" class="toc-link"><span class="toc-num">4</span>Layer 2 — Chess Events</a></li>
+    <li class="toc-item"><a href="#s5" class="toc-link"><span class="toc-num">5</span>Layer 3 — Pattern Engine v2</a></li>
+    <li class="toc-item"><a href="#s6" class="toc-link"><span class="toc-num">6</span>Layer 4 — Historical Similarity Retrieval</a></li>
+    <li class="toc-item"><a href="#s7" class="toc-link"><span class="toc-num">7</span>Layer 5 — Player Model &amp; Coaching Memory</a></li>
+    <li class="toc-item"><a href="#s8" class="toc-link"><span class="toc-num">8</span>Layer 6 — Coaching Context Contract</a></li>
+    <li class="toc-item"><a href="#s9" class="toc-link"><span class="toc-num">9</span>Layer 7 — Recommendations</a></li>
+    <li class="toc-item"><a href="#s10" class="toc-link"><span class="toc-num">10</span>Layer 8 — Evaluation Before Training</a></li>
+    <li class="toc-item toc-sub"><a href="#s10-1" class="toc-link"><span class="toc-num">10.1</span>The Model Baseline &amp; Prompt Arm</a></li>
+    <li class="toc-item"><a href="#s11" class="toc-link"><span class="toc-num">11</span>Non-Goals &amp; Invariants</a></li>
+    <li class="toc-item"><a href="#s12" class="toc-link"><span class="toc-num">12</span>Phased Delivery</a></li>
+    <li class="toc-item toc-sub"><a href="#s12-1" class="toc-link"><span class="toc-num">12.1</span>What Phase 2 Delivered</a></li>
+    <li class="toc-item toc-sub"><a href="#s12-2" class="toc-link"><span class="toc-num">12.2</span>Mate Sign Convention Verified</a></li>
+    <li class="toc-item toc-sub"><a href="#s12-3" class="toc-link"><span class="toc-num">12.3</span>The Best-Move Defect</a></li>
+    <li class="toc-item toc-sub"><a href="#s12-4" class="toc-link"><span class="toc-num">12.4</span>What Phase 3 Delivered</a></li>
+    <li class="toc-item toc-sub"><a href="#s12-5" class="toc-link"><span class="toc-num">12.5</span>What Phase 5 Delivered</a></li>
+    <li class="toc-item toc-sub"><a href="#s12-6" class="toc-link"><span class="toc-num">12.6</span>What Phase 4 Delivered</a></li>
+    <li class="toc-item"><a href="#s13" class="toc-link"><span class="toc-num">13</span>Research Summary &amp; Model Landscape</a></li>
+    <li class="toc-item"><a href="#s14" class="toc-link"><span class="toc-num">14</span>Open Questions</a></li>
+  </ul>
+</nav>
+
+<div class="doc-header">
+  <h1 class="doc-title">Player Intelligence Architecture</h1>
+  <div class="meta-pills">
+    <span class="meta-pill"><span class="pill-label">Status</span>Target Architecture</span>
+    <span class="meta-pill"><span class="pill-label">Date</span>2026-09-24</span>
+    <span class="meta-pill"><span class="pill-label">Audience</span>Backend · AI/ML Engineering · Product</span>
+  </div>
+  <p class="confidentiality-note">Confidential — Internal Use Only · Henry Giwa</p>
+  <p class="confidentiality-note">Phase 1 evidence: <code class="inline">../audit/player-intelligence-phase1-audit.md</code><br />
+  Related: <code class="inline">MEMORY_RETRIEVAL_CONTEXT_ARCHITECTURE.md</code> · <code class="inline">stockfish-architecture.md</code> · <code class="inline">AI_MODEL_STRATEGY.md</code> · <code class="inline">repository-invariants.md</code></p>
+  <nav class="doc-nav">
+    <span class="doc-nav-label">Suite:</span>
+    <a href="index.html" class="doc-hub-link">Hub</a>
+    <a href="frd_product.html">Product FRD</a>
+    <a href="frd_technical.html">Technical FRD</a>
+    <a href="ai_model_strategy.html">AI Model Strategy</a>
+    <a href="memory_retrieval_context_architecture.html">Memory &amp; Retrieval</a>
+    <span class="doc-current">Player Intelligence</span>
+    <a href="pricing_monetization_strategy.html">Pricing</a>
+  </nav>
+</div>
+
+<main class="main-content">
+<div class="content-inner">
+
+  <!-- Section 1 -->
+  <section class="section-block">
+    <div id="s1" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">1</span>
+      <h2 class="section-title">Purpose and Principles</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>ChessRun's product principle:</p>
+    <blockquote>
+      <p>ChessRun should learn how a player makes decisions over time, identify recurring patterns in those decisions, and turn those patterns into personalized coaching interventions.</p>
+    </blockquote>
+    <p>This document defines the system that makes that true. It is <em>not</em> "make the LLM explain chess better".</p>
+
+    <p><strong>Principles (binding):</strong></p>
+    <ol>
+      <li><strong>Stockfish is the only chess authority.</strong> Evaluations, best moves and calculation come from the engine. The LLM never produces chess truth.</li>
+      <li><strong>The LLM is the coach, not the coaching system.</strong> It explains, prioritises and converses over evidence the system computed.</li>
+      <li><strong>Patterns are computed, never declared.</strong> Detection is deterministic and reproducible; the LLM may not invent a pattern, a statistic, or a game.</li>
+      <li><strong>Every claim is traceable.</strong> A pattern cites occurrences; an occurrence cites a move; a recommendation cites a pattern and its evidence.</li>
+      <li><strong>Event over move.</strong> Coaching operates on <em>decisions that mattered</em>, not on every ply.</li>
+      <li><strong>Context before intelligence.</strong> Improving retrieval/context beats fine-tuning; measure first, train only if measurement justifies it.</li>
+      <li><strong>Extend, don't rewrite.</strong> The shipped truth, pattern, memory and retrieval layers stay; this architecture fills the gaps between them.</li>
+    </ol>
+  </section>
+
+  <!-- Section 2 -->
+  <section class="section-block">
+    <div id="s2" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">2</span>
+      <h2 class="section-title">The Intelligence Loop</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code>Game
+ ↓  (exists)      Chess.com ingestion + python-chess
+Move facts
+ ↓  (M1–M4)       per-move Stockfish evidence + position features  → game_moves
+Significant events
+ ↓  (M5)          deterministic event extraction                   → chess_events
+Pattern detection
+ ↓  (M6)          context-aware similarity + counts + confidence   → player_patterns (+ runs)
+Historical retrieval
+ ↓  (M9)          position/event-keyed similarity search           → similar past decisions
+Player model
+ ↓  (M7/M8)       versioned profile + coaching ledger              → player_profiles, interventions
+Coaching reasoning
+ ↓  (M10)         ranked context contract                          → LLM coach
+Recommendation / intervention
+ ↓  (M11/M8)      concept → intervention mapping, recorded          → coaching_interventions
+Future-game verification
+ ↺  (M7)          re-detect over new games, compare windows        → trend, outcome</code></pre>
+    </div>
+
+    <p>Each arrow is a component with a persisted output, so the loop is inspectable at every stage: given a coach sentence, you can walk back to the engine evaluations that justify it.</p>
+  </section>
+
+  <!-- Section 3 -->
+  <section class="section-block">
+    <div id="s3" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">3</span>
+      <h2 class="section-title">Layer 1 — Move Facts (<code class="inline">game_moves</code>)</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>The substrate. One row per ply, written during analysis, backfilled from the existing <code class="inline">evaluations</code> JSON.</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Group</th><th>Fields</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Identity</strong></td><td><code class="inline">id</code>, <code class="inline">user_id</code>, <code class="inline">game_id</code>, <code class="inline">ply</code>, <code class="inline">move_number</code>, <code class="inline">is_user_move</code>, <code class="inline">color</code></td></tr>
+          <tr><td><strong>Position</strong></td><td><code class="inline">fen_before</code>, <code class="inline">fen_after</code>, <code class="inline">position_key</code> (normalised), <code class="inline">material_balance</code></td></tr>
+          <tr><td><strong>Move</strong></td><td><code class="inline">move_uci</code>, <code class="inline">move_san</code>, <code class="inline">best_move_uci</code>, <code class="inline">best_pv</code> (3–5 plies)</td></tr>
+          <tr><td><strong>Engine</strong></td><td><code class="inline">eval_before_cp</code>, <code class="inline">eval_after_cp</code>, <code class="inline">cp_loss</code>, <code class="inline">mate_in</code>, <code class="inline">engine_depth</code></td></tr>
+          <tr><td><strong>Judgement</strong></td><td><code class="inline">classification</code> (one canonical rule set), <code class="inline">phase</code> (one canonical rule)</td></tr>
+          <tr><td><strong>Context features</strong></td><td><code class="inline">structure_key</code> (pawn skeleton), <code class="inline">king_safety_delta</code>, <code class="inline">piece_activity_delta</code>, <code class="inline">hanging_piece</code>, <code class="inline">threat_created</code>, <code class="inline">opponent_threat_ignored</code></td></tr>
+          <tr><td><strong>Derived links</strong></td><td><code class="inline">prev_ply</code> (opponent move that preceded this one), <code class="inline">event_id</code> (nullable)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Two corrections this layer forces on the existing pipeline:</strong></p>
+    <ul>
+      <li><strong><code class="inline">eval_before</code> is required.</strong> <code class="inline">evaluation_change</code> used to be a delta between consecutive <em>post-move</em> evaluations, and <code class="inline">evaluate_position</code> scores from the side to move (<code class="inline">score.relative</code>), so the frames alternated every ply and the analyzer's in-place sign flip left later plies comparing two different frames — measured at 4x the true ACPL on average (35x in the worst game), 38.6% mean accuracy instead of 71.4%, and blunder counts wrong in both directions. Fixed at the source (<code class="inline">unified_analyzer.py</code>, <code class="inline">fix/analysis-eval-frames</code>): <code class="inline">evaluation_change</code> is now the mover's own centipawn loss, clamped at zero, computed exactly as <code class="inline">cp_loss</code> (<code class="inline">eval_before − eval_after</code> in the mover's frame). The ideal <code class="inline">eval_before(best) − eval_before(played)</code> refinement remains open.</li>
+      <li><strong>Mate positions must not count as 0 cp.</strong> The current <code class="inline">or 0</code> fallback (<code class="inline">unified_analyzer.py:261,283</code>) silently flattens decisive positions and biases ACPL. The <em>loss</em> calculation now substitutes a bounded <code class="inline">MATE_SCORE</code> from <code class="inline">mate_in</code> (matching <code class="inline">move_facts</code>); the stored <code class="inline">evaluation_cp</code> still flattens to 0 for readers that rebuild mates themselves.</li>
+    </ul>
+
+    <p><code class="inline">position_key</code> is deliberately cheap: piece placement + side to move + castling rights, normalised, hashed. It supports exact and near-exact recurrence ("the same structure again") without any model. Feature columns support <em>similar</em> (not identical) recurrence and are the inputs to Layer 3's context matching.</p>
+
+    <p><strong>Retention:</strong> <code class="inline">game_moves</code> grows ~85 rows per analysed game. At 500 analysed games that is ~42k rows per player — trivial for Postgres; no partitioning yet.</p>
+  </section>
+
+  <!-- Section 4 -->
+  <section class="section-block">
+    <div id="s4" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">4</span>
+      <h2 class="section-title">Layer 2 — Chess Events (<code class="inline">chess_events</code>)</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>An event is a <em>decision that mattered</em>, with enough context to coach from.</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">event_type</code></td><td>From a closed, code-owned vocabulary (below).</td></tr>
+          <tr><td><code class="inline">severity</code></td><td>Computed band (<code class="inline">low</code>/<code class="inline">medium</code>/<code class="inline">high</code>/<code class="inline">critical</code>) from cp loss, phase and position features.</td></tr>
+          <tr><td><code class="inline">phase</code>, <code class="inline">move_number</code>, <code class="inline">game_id</code>, <code class="inline">user_id</code></td><td>Where it happened.</td></tr>
+          <tr><td><code class="inline">position_key</code>, <code class="inline">fen_before</code></td><td>The position that produced it.</td></tr>
+          <tr><td><code class="inline">played_move</code>, <code class="inline">best_move</code>, <code class="inline">best_pv</code></td><td>What was played and what was available.</td></tr>
+          <tr><td><code class="inline">eval_before_cp</code>, <code class="inline">cp_loss</code></td><td>Why it mattered, in engine terms.</td></tr>
+          <tr><td><code class="inline">concept</code></td><td>The chess concept it represents (<code class="inline">candidate_moves</code>, <code class="inline">king_safety</code>, <code class="inline">endgame_technique</code>, <code class="inline">piece_activity</code>, <code class="inline">pawn_structure</code>, <code class="inline">conversion</code>, …).</td></tr>
+          <tr><td><code class="inline">opponent_trigger_ply</code> / <code class="inline">opponent_move</code></td><td>Set when the opponent's previous move is what exposed the weakness.</td></tr>
+          <tr><td><code class="inline">evidence</code> (JSONB)</td><td>The exact numeric inputs behind the classification, so the event is auditable.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Initial vocabulary (Phase 2, all deterministic):</strong> <code class="inline">major_blunder</code>, <code class="inline">tactical_miss</code>, <code class="inline">missed_win</code>, <code class="inline">failed_to_punish</code>, <code class="inline">conversion_failure</code>, <code class="inline">endgame_technique_failure</code>, <code class="inline">king_safety_error</code>, <code class="inline">piece_activity_error</code>, <code class="inline">pawn_structure_error</code>, <code class="inline">exchange_error</code>, <code class="inline">premature_attack</code>, <code class="inline">opening_deviation</code>, <code class="inline">threat_unanswered</code>, <code class="inline">time_pressure_error</code> <em>(last one only when clock data exists)</em>.</p>
+
+    <p>Rules that keep this honest:</p>
+    <ul>
+      <li>An event is created only from stored move facts — never from an LLM call.</li>
+      <li>The vocabulary is code-owned and versioned; detectors declare the version they used.</li>
+      <li>"Why it mattered" is always numeric (<code class="inline">cp_loss</code>, phase, material) plus a rule id, not prose.</li>
+    </ul>
+
+    <p><strong>Prior art check.</strong> Published blunder prediction pairs a <em>frozen</em> board embedding with a <em>learned user-embedding space</em> and finds the latent player profile predicts error better than Elo (Rokach &amp; Shapira, Applied Intelligence 2026 — <a href="https://link.springer.com/article/10.1007/s10489-026-07131-2">Springer</a>). That is the same division of labour proposed here — engine-grounded position facts plus a durable per-player model — and it validates investing in the player model rather than only per-game analysis. Time pressure is treated as a separate factor in the literature (<a href="https://ieeexplore.ieee.org/document/11636438">blitz blunder prediction, IEEE 2026</a>; <a href="https://lichess.org/@/jk_182/blog/how-does-the-clock-impact-the-rate-of-mistakes/JSazQplM">Lichess clock-vs-mistakes analysis</a>), which is why <code class="inline">time_pressure_error</code> stays in the vocabulary but is gated on clock ingestion. No public dataset labels mistakes <em>by cause</em>, so our taxonomy is necessarily bespoke and must be derived from engine-measurable features (swing magnitude, tactic detectability, phase, material, ply) rather than borrowed.</p>
+  </section>
+
+  <!-- Section 5 -->
+  <section class="section-block">
+    <div id="s5" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">5</span>
+      <h2 class="section-title">Layer 3 — Pattern Engine v2</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>The existing engine stays the foundation: deterministic detectors over persisted analysis (<code class="inline">services/patterns/*</code>), severity and confidence computed by formula, one row per <code class="inline">(user, type, subtype)</code>.</p>
+
+    <p><strong>What changes:</strong></p>
+    <ol>
+      <li><strong>Input becomes events, not labels.</strong> Detectors consume <code class="inline">chess_events</code>, which already carry concept, phase, position key and context features.</li>
+      <li><strong>Similarity replaces equality.</strong> Two events belong to the same pattern when they share event type <em>and</em> are close on a feature set (phase, material band, structure key, king-safety band, opponent-trigger presence) — not when they share a label. Concretely: a weighted feature distance with per-feature tolerances, thresholded, plus a minimum distinct-games gate (already present as <code class="inline">MIN_*_SAMPLE_GAMES</code>).</li>
+      <li><strong>Evidence is persisted.</strong> Today the detector's <code class="inline">evidence</code> dict (averages, thresholds, detector name) is computed and discarded (<code class="inline">types.py:55</code>). It gets a column.</li>
+      <li><strong>Run history.</strong> A <code class="inline">pattern_runs</code> row per detection run records counts, thresholds, detector version and timestamp. <code class="inline">trend_direction</code> becomes a computed comparison of the last two windows; "persistent / improving / resolved / newly detected" derive from it.</li>
+      <li><strong>Strengths.</strong> A symmetric strength detector sets <code class="inline">is_strength</code> (today never true), so the profile can name a superpower from evidence.</li>
+      <li><strong>Occurrence hygiene.</strong> Occurrences refresh fully each run, and disappear when their pattern stops firing; phase-fallback occurrences stop being silently dropped (<code class="inline">pattern_service.py:70-71</code>).</li>
+    </ol>
+
+    <p><strong>Pattern output contract</strong> (extends the current schema):</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-json">{
+  "pattern": "premature_pawn_push",
+  "concept": "pawn_structure",
+  "phase": "middlegame",
+  "contexts": ["closed_position", "opponent_kingside_attack"],
+  "occurrences": 7,
+  "distinct_games": 5,
+  "games": [123, 145, 162, 188, 204],
+  "example_events": [12, 44, 91],
+  "severity": "moderate",
+  "confidence": 0.87,
+  "trend": "persistent",
+  "window": {"games_considered": 40, "from": "2026-07-01", "to": "2026-09-20"},
+  "detector": {"id": "premature_pawn_push", "version": 2},
+  "evidence": {"feature_distance_max": 0.18, "cp_loss_mean": 142, "phase_mix": {"middlegame": 6, "endgame": 1}}
+}</code></pre>
+    </div>
+
+    <p>Every field is either measured or declared by the detector — no field is LLM-authored.</p>
+  </section>
+
+  <!-- Section 6 -->
+  <section class="section-block">
+    <div id="s6" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">6</span>
+      <h2 class="section-title">Layer 4 — Historical Similarity Retrieval</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>The question the coach must be able to answer: <em>"Have I seen this player in this situation before, and what did they do?"</em></p>
+
+    <p>Two-stage, cheapest-first:</p>
+    <ol>
+      <li><strong>Exact/structural recurrence (SQL).</strong> Match <code class="inline">position_key</code>, then widen by structure key + phase. Returns prior occurrences with what the player played, the engine's alternative, and the outcome. No model, no index risk.</li>
+      <li><strong>Feature similarity (SQL or vector).</strong> Rank candidates by weighted feature distance over the Layer 1 features. Only if this proves insufficient do we add a learned position embedding column with an HNSW index.</li>
+    </ol>
+
+    <p><strong>Prior art supports this ordering.</strong> The strongest published baseline for similar-position retrieval is symbolic, not learned: Ganguly, Leveling &amp; Jones encode each position as a <em>text document</em> of piece placement, reachability and piece-to-piece connectivity, searched with a standard inverted index (SIGIR 2014, <a href="https://dl.acm.org/doi/10.1145/2600428.2609605">ACM</a>, <a href="http://doras.dcu.ie/20378/">PDF</a>) — the same lineage as motif clustering from piece-position + connectivity features (<a href="https://ailab.si/matej/doc/Automatic_Recognition_of_Similar_Chess_Motifs.pdf">Automatic Recognition of Similar Chess Motifs</a>). Pawn-structure hashing is the standard exact-match bucket key (<a href="https://www.chessprogramming.org/Pawn_Hash_Table">Chess Programming Wiki</a>). Learned options exist — ChessLM emits 256-d FEN vectors, and Chessformer (<a href="https://proceedings.iclr.cc/paper_files/paper/2026/hash/3d167db04a90885ad5208fe8b273668b-Abstract-Conference.html">ICLR 2026</a>) is a square-token encoder that powers Maia-3 — but they must be evaluated before they can justify coaching claims.</p>
+
+    <p><strong>Practical sizing:</strong> a 256-d <code class="inline">float4</code> vector is ~1 KB, so 50k positions ≈ 50 MB — brute-force ranking is fine at our scale, and the real bottleneck in Postgres is <em>filtered</em> vector search, not HNSW itself (<a href="https://clickhouse.com/resources/engineering/scale-vector-search-postgres">scaling vector search in Postgres</a>). If we do quantise/feature-hash vectors, use inner product rather than cosine. Define our own similarity ground truth for evaluation — no standard benchmark exists beyond SIGIR 2014.</p>
+
+    <p>Retrieval returns, per match: the previous event, the position, the player's decision, the better decision, the result, and the pattern it belonged to. That is directly injectable into coaching context (Layer 6).</p>
+
+    <p><strong>This is a different retrieval path from today's text retrieval.</strong> The existing <code class="inline">retrieve_semantic_memories</code> searches embedded <em>text</em> over patterns and past chat exchanges (<code class="inline">services/coaching/retrieval_service.py</code>). Both stay: text retrieval answers "what have we discussed", position retrieval answers "what have you done in this position". They are ranked separately and injected as distinct blocks.</p>
+
+    <p>Also required here: <strong>a relevance floor.</strong> <code class="inline">min_similarity</code> is currently never passed, so it stays <code class="inline">0.0</code> and nothing is filtered (<code class="inline">retrieval_service.py:196</code>). Both retrieval paths get an explicit threshold, and "no relevant evidence" must be a legal, expected result.</p>
+  </section>
+
+  <!-- Section 7 -->
+  <section class="section-block">
+    <div id="s7" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">7</span>
+      <h2 class="section-title">Layer 5 — Player Model and Coaching Memory</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p><strong>Player model</strong> = the existing versioned <code class="inline">player_profiles</code> snapshots, extended with:</p>
+    <ul>
+      <li>Per-phase and per-concept tendency summaries derived from patterns (not raw ACPL).</li>
+      <li>Opening tendencies by structure/position key rather than by opening name string.</li>
+      <li>Behavioural hypotheses with their supporting pattern ids and confidence — phrased as chess-behaviour hypotheses ("tends to trade into worse endgames"), never as personality claims.</li>
+    </ul>
+
+    <p><strong>Coaching memory (new):</strong> a <code class="inline">coaching_interventions</code> ledger:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">pattern_id</code></td><td>What weakness this addresses.</td></tr>
+          <tr><td><code class="inline">intervention_type</code></td><td><code class="inline">practice_recommendation</code>, <code class="inline">drill</code>, <code class="inline">variation_study</code>, <code class="inline">concept_explanation</code>, <code class="inline">position_exercise</code>.</td></tr>
+          <tr><td><code class="inline">concept</code>, <code class="inline">payload</code> (JSONB)</td><td>The specific material offered.</td></tr>
+          <tr><td><code class="inline">offered_at</code>, <code class="inline">session_id</code></td><td>When and in which conversation.</td></tr>
+          <tr><td><code class="inline">outcome</code></td><td><code class="inline">unknown</code>, <code class="inline">improving</code>, <code class="inline">persistent</code>, <code class="inline">resolved</code>, computed from later pattern windows.</td></tr>
+          <tr><td><code class="inline">evidence</code> (JSONB)</td><td>Before/after rates and the window boundaries.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>This is what prevents generic repetition: before coaching a pattern, the system checks what was already tried and whether it moved.</p>
+
+    <p><strong>ChessRun coaches; practice happens elsewhere (product decision).</strong> Players do their reps on <strong>ChessReps</strong> (spaced-repetition repertoire) and <strong>ChessFlow</strong> (guided calculation), not inside ChessRun. That is a deliberate MVP boundary, not a missing feature, and it constrains the design in three ways:</p>
+    <ol>
+      <li><strong>The product's coaching output is a prescription</strong> — what to work on, and why, in the player's own evidence. <code class="inline">services/coaching/practice_focus.py</code> is the single owner of that mapping (event type → focus → the platform it belongs on), so the API, the UI and the coach's prompt cannot drift into three different descriptions of the same advice.</li>
+      <li><strong>The ledger records the recommendation, not a completed drill.</strong> <code class="inline">practice_recommendation</code> is its own intervention type, written by the system when focus is offered (during a pattern run), never chosen by the model. "Have I taught you this, and did it work?" therefore stays answerable without an integration: the offer is a stored fact and the outcome is measured from later games.</li>
+      <li><strong>No invented partner content.</strong> With no integration yet, the system names a platform only as a destination and never a specific drill, course, line or link there. The coach's prompt carries the same rule (<code class="inline">PRACTICE_HANDOFF_RULE</code>), because a plausible-looking link to content that may not exist is the same class of ungrounded claim the rest of the system refuses to make. A partner is suggested only when the fix genuinely belongs on it; otherwise the focus is still given, and no destination is named.</li>
+    </ol>
+
+    <p>Integration with either platform is future work; when it lands, <code class="inline">PRACTICE_PARTNERS</code> is the one place that changes.</p>
+
+    <p><strong>Profile states</strong> (derived, stored on the pattern/ledger, never guessed): <code class="inline">newly_detected</code>, <code class="inline">known</code>, <code class="inline">improving</code>, <code class="inline">persistent</code>, <code class="inline">resolved</code>, <code class="inline">needs_reinforcement</code>.</p>
+  </section>
+
+  <!-- Section 8 -->
+  <section class="section-block">
+    <div id="s8" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">8</span>
+      <h2 class="section-title">Layer 6 — Coaching Context Contract</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>The context builder becomes a ranked assembler with explicit budgets. Blocks, in order:</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code>1. GROUNDING RULES            (fixed: Stockfish is truth; no invention; cite pattern ids)
+2. LIVE COUNTS                (analyzed/imported right now — the existing, correct rule)
+3. CURRENT EVENT              (event type, phase, position, played vs best, cp loss, concept)
+4. CURRENT GAME               (result, colour, opponent rating, opening, time class)
+5. HISTORICAL SIMILAR EVENTS  (top-k by similarity: what the player did then, and the outcome)
+6. PLAYER PATTERNS            (relevant only; with frequency, confidence, trend, and citations)
+7. PRIOR COACHING             (interventions already tried for these patterns + whether they worked)
+8. RECOMMENDATION CANDIDATES  (concept → intervention options with the evidence that selected them)
+9. PLAYER PROFILE             (archetype, phase tendencies, summary — the current block, trimmed)
+10. SEMANTIC MEMORIES         (existing text retrieval, above a similarity floor)</code></pre>
+    </div>
+
+    <p>Rules:</p>
+    <ul>
+      <li><strong>Relevance ranking, not dumping.</strong> Every block has a hard item budget and a token budget; blocks are dropped whole (lowest priority first) when the budget is exceeded: 5 → 9 → 10.</li>
+      <li><strong>Only relevant patterns.</strong> Today's assembler injects the global top-5 by severity; the target ranks by relevance to the current event (concept/phase/context match), falling back to severity when there is no event in play.</li>
+      <li><strong>Frequency and trend must appear</strong> where patterns appear: the current line shows severity and confidence only (<code class="inline">context_assembler.py:150-155</code>), so "how often" and "which way is it moving" never reach the model.</li>
+      <li><strong>Absence is stated.</strong> When there is no similar history, the context says so explicitly, so the coach cannot imply memory it does not have.</li>
+    </ul>
+  </section>
+
+  <!-- Section 9 -->
+  <section class="section-block">
+    <div id="s9" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">9</span>
+      <h2 class="section-title">Layer 7 — Recommendations</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code>Pattern → concept → intervention → drill / variation / exercise</code></pre>
+    </div>
+
+    <ul>
+      <li>Every recommendation carries its chain: intervention ← pattern ← occurrences ← moves ← engine evaluations.</li>
+      <li>Generic advice is a policy violation: "practice tactics" is only legal when the evidence is a tactical-miss pattern, and it must ship with the pattern ids that justify it.</li>
+      <li>Opening advice is <strong>position-based, never repertoire-based</strong>: the unit is a structure/position the player actually reaches, with their historical decisions, the stronger continuation, the plan, and typical opponent responses.</li>
+      <li>Interventions are recorded in the ledger (Layer 5) so the next session knows what was already offered.</li>
+    </ul>
+  </section>
+
+  <!-- Section 10 -->
+  <section class="section-block">
+    <div id="s10" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">10</span>
+      <h2 class="section-title">Layer 8 — Evaluation Before Training</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>Fine-tuning is Phase 7 and is <strong>not</strong> assumed. The order is fixed:</p>
+
+    <ol>
+      <li><strong>Dataset.</strong> Fixture games (real or synthetic) with labelled ground truth: which events occurred, which patterns are true, which are false, which are isolated mistakes, which are opponent-induced.</li>
+      <li><strong>Harness.</strong> Offline runner executing analysis → events → patterns → context → coach output against fixtures, recording machine-readable outputs.</li>
+      <li><strong>Scores.</strong>
+        <ul>
+          <li><em>Pattern recognition</em>: precision/recall against labelled patterns; false-pattern rate.</li>
+          <li><em>Grounding</em>: fraction of coach claims traceable to an evidence row; zero tolerance for invented game ids/statistics.</li>
+          <li><em>Historical reasoning</em>: correct linking of a current event to past occurrences.</li>
+          <li><em>Chess correctness</em>: agreement with Stockfish on the diagnosis.</li>
+          <li><em>Coaching quality</em>: rubric-scored usefulness, active-voice diagnosis, no engine jargon (the composer's banned-term list generalised).</li>
+          <li><em>Personalisation</em>: does the answer change when the player's history changes?</li>
+        </ul>
+        <p><strong>Design taken from prior art.</strong> The public <a href="https://huggingface.co/datasets/khoilamalphaai/chess-coach-benchmark">chess-coach-benchmark</a> is the closest published harness: held-out positions, <strong>deterministic non-LLM verification as the gate</strong> (move soundness via Stockfish, no-engine-jargon, and fabricated-board-fact detection), with a blinded cross-family LLM council used only as a secondary instructiveness signal. We adopt that split — deterministic gates first, judges second — and add claim-level faithfulness in the RAGAS style, decomposing an answer and checking each claim against the verified-facts block (<a href="https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/">RAGAS faithfulness</a>).</p>
+        <p><strong>Why the gate must not be an LLM.</strong> Chess-specific work shows explanations that <em>sound</em> right are not evidence of correct reasoning: move recoverability collapses once explicit hints are removed, and plausible-but-wrong explanations actively reduce accuracy (<a href="https://arxiv.org/abs/2609.22245">arXiv:2609.22245</a>); evaluation frameworks built on LLM judges are explicitly flagged as insufficient (<a href="https://arxiv.org/abs/2607.11486">arXiv:2607.11486</a>). Personalisation is therefore tested behaviourally — swap the player's history and confirm the diagnosis changes — not judged by fluency.</p>
+        <p><strong>Structured facts beat prose.</strong> LLAMIA's "verbalization debt" (<a href="https://arxiv.org/abs/2609.00474">arXiv:2609.00474</a>) is the argument for passing engine output to the model as structured facts (our context blocks) instead of hoping a summary preserves the detail — which is also why the event layer, not a narrative, is the unit of context.</p>
+      </li>
+      <li><strong>Baseline</strong>, then compare: base vs prompt+context vs (if justified) fine-tuned vs fine-tuned+context.</li>
+      <li><strong>Split discipline:</strong> train/validation/test by <strong>player or game</strong>, never by move, so the model cannot memorise the same game across splits.</li>
+    </ol>
+
+    <p>Only if the baseline shows the model failing <em>despite correct context</em> does Phase 7 proceed — starting with PEFT (LoRA/QLoRA) on an open-weight model, keeping the current hosted model as the serving path until a measured win exists.</p>
+
+    <div id="s10-1"></div>
+    <h3 class="sub-heading">The model baseline, and the prompt arm (measured 2026-09-29)</h3>
+
+    <p>Run against the production provider on user 1's real context. <strong>Correct context is a precondition, and it holds</strong>: the same contexts pass 12/12 on the context-quality checks, and the fixture harness passes 7/7 with recall 1.0.</p>
+
+    <p><strong>Arm A — the arm first measured, and it was the wrong arm.</strong> The harness sent a three-sentence stand-in system prompt, not the instructions production sends. Against that prompt:</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th></th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Provider</td><td>configured</td></tr>
+          <tr><td>Probes scored / passed</td><td>3 of 3 / <strong>0 of 3</strong></td></tr>
+          <tr><td><code class="inline">grounding</code></td><td><strong>1/3</strong></td></tr>
+          <tr><td><code class="inline">uses_player_history</code>, <code class="inline">no_invented_evaluations</code>, <code class="inline">no_engine_jargon</code></td><td>3/3 each</td></tr>
+          <tr><td><code class="inline">honest_uncertainty</code></td><td>2/3</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>A repeat of that same arm scored <code class="inline">grounding</code> 2/3 and 1 of 3 probes passed, with no code change between the runs. <strong>The instrument is noisy</strong>: three probes at temperature 0.7 cannot separate a real difference from variation, and any conclusion drawn from one run of it would have been over-read. That caveat applies to every number in this section.</p>
+
+    <p><strong>Arm B — the prompt the product actually sends.</strong> The harness now imports the coach's own instruction block and practice rule, so the two cannot drift apart.</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th></th><th>Arm A (stand-in)</th><th>Arm B (real instructions)</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">grounding</code></td><td>1/3 (repeat: 2/3)</td><td><strong>3/3</strong></td></tr>
+          <tr><td>Probes passed</td><td>0/3 (repeat: 1/3)</td><td><strong>2/3</strong></td></tr>
+          <tr><td><code class="inline">honest_uncertainty</code></td><td>2/3</td><td>2/3</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Decision: fine-tuning is not indicated on this evidence.</strong> The gate's ladder is <em>base → prompt+context → fine-tuned</em>, and moving from a stand-in prompt to the real one recovered grounding to 3/3 — the cheap rung did measurable work, so the expensive one is not justified yet. What remains is one specific failure, and it is instructive: the single failing check is <code class="inline">honest_uncertainty</code>, on the <strong>absence path</strong> ("claimed a pattern although no history was supplied"). The model does not invent facts or evaluations; it asserts a <em>pattern</em> where it has none. That is a prompt/context defect with a known shape, not a capability gap that needs training.</p>
+
+    <p><strong>What would change the decision.</strong> (1) An explicit do-not-claim instruction on the absence path, re-measured. (2) More probes and repeated runs, because three probes at temperature 0.7 is too blunt an instrument for a decision of this weight — the 1/3-versus-2/3 spread within arm A is the evidence for that. Only if the specific failure survives both would Phase 7 be worth opening.</p>
+
+    <p><strong>Known fidelity gap, stated rather than implied.</strong> The harness sends the assembled context in the <em>user</em> turn, while production puts it in the <em>system</em> turn with the instructions. The instruction text, the rules and the question-echo now match production exactly; the placement of the context block does not.</p>
+
+    <p><strong>How the credential-backed half is run without a shell.</strong> The agent working on this repository has no interactive shell on Render (the MCP exposes service, deploy, env and log operations), and the LLM credentials exist only in the Render environment, so <code class="inline">run_model_eval.py</code> cannot execute from a local checkout. It therefore runs <strong>in the worker build</strong>, where those credentials are already present, and the report is read out of the build log. That step is gated on <code class="inline">RUN_MODEL_EVAL_ON_BUILD=true</code>, and the variable is currently <code class="inline">false</code> — no ordinary deploy runs an LLM evaluation.</p>
+
+    <p><strong>How the gate is run today.</strong> The question splits into two halves, and only one of them needs credentials — so the credential-free half is a shippable check rather than a parked task:</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Question</th><th>Command</th><th>Needs a provider</th></tr></thead>
+        <tbody>
+          <tr><td>Is the context correct and safe to coach from?</td><td><code class="inline">python scripts/verify_context_quality.py --user-id 1</code></td><td>no</td></tr>
+          <tr><td>Do the pattern layer and grounding hold on labelled fixtures?</td><td><code class="inline">python scripts/run_coach_eval.py --user-id 1</code></td><td>no</td></tr>
+          <tr><td>Are the stored per-ply facts internally consistent?</td><td><code class="inline">python scripts/audit_move_facts.py --user-id 1</code></td><td>no</td></tr>
+          <tr><td>What does the model do with correct context?</td><td><code class="inline">python scripts/run_model_eval.py --user-id 1</code></td><td>yes</td></tr>
+          <tr><td>The same, where the credentials are (no shell needed)</td><td>set <code class="inline">RUN_MODEL_EVAL_ON_BUILD=true</code> on the worker, deploy, read the build log, then unset it</td><td>yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>A model baseline only means something if the context under it is right, so the first two are gates on the third, not alternatives to it. The context check runs the same probes as <code class="inline">run_model_eval</code>, scores the rendered blocks the coach actually receives, and exits non-zero on any violation: missing grounding rule, engine vocabulary in player-facing text, a "recurring pattern" with no citable id, or an unstated absence. Because it is deterministic, it can also score the fallback coaching text a player sees when no provider is configured — text that is just as user-visible as model output and was previously unmeasured.</p>
+
+    <p><strong>Feasibility (verified).</strong> Open weights: <a href="https://huggingface.co/zai-org/GLM-5.1">GLM-4.5 / GLM-5.1</a> (MIT), <a href="https://huggingface.co/Qwen/Qwen3-32B">Qwen3-8B/32B</a> (Apache-2.0), <a href="https://huggingface.co/deepseek-ai/DeepSeek-R1">DeepSeek-R1</a> (MIT). MoE giants (DeepSeek V3/R1 at 671B, GLM-5-class) are <strong>poor local-LoRA targets</strong> — adapters train on active parameters but all weights must be resident — so the realistic band is <strong>dense 7B–32B</strong> (<a href="https://www.spheron.network/blog/gpu-vram-requirements-fine-tune-llm-2026/">VRAM table, Spheron 2026</a>):</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Model</th><th>Full FT</th><th>LoRA r=64 BF16</th><th>QLoRA NF4</th></tr></thead>
+        <tbody>
+          <tr><td>7–8B</td><td>~88 GB</td><td>~20 GB</td><td>~8 GB</td></tr>
+          <tr><td>14B</td><td>~174 GB</td><td>~35 GB</td><td>~14 GB</td></tr>
+          <tr><td>32B</td><td>~394 GB</td><td>~76 GB</td><td>~28 GB</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Tooling: <a href="https://unsloth.ai/docs/get-started/fine-tuning-llms-guide">Unsloth</a>, <a href="https://github.com/axolotl-ai-cloud/axolotl">Axolotl</a>, or peft+trl (<a href="https://mintlify.wiki/huggingface/trl/peft-integration">TRL PEFT</a>). Managed LoRA services exist but their adapters are hosted and non-portable. <strong>The serving pattern that fits ChessRun unchanged:</strong> fine-tune open weights offline, serve the merged model behind an OpenAI-compatible vLLM/SGLang endpoint, and simply repoint <code class="inline">LLM_LOCAL_BASE_URL</code> — no application code changes.</p>
+
+    <p><strong>Dataset lessons from the closest public analogue</strong> (<a href="https://huggingface.co/khoilamalphaai/qwen3-1.7b-chess-coach-mlx/blob/main/RESULTS.md">qwen3-chess-coach results</a>):</p>
+    <ol>
+      <li><strong>Tuning increases dependence on grounding.</strong> Un-grounded fabrication rose 87 % → 99 % after tuning while the grounded deployment mode fell 50 % → 33 %. Grounding blocks are the safety mechanism, not the weights — so never train a configuration the context contract cannot support.</li>
+      <li><strong>Filter labels deterministically, don't train truthfulness.</strong> A rule-based reject gate drove false labels to 0 % while an LLM truthfulness rubric barely moved.</li>
+      <li><strong>Tier-contrastive data fixes level calibration</strong> — the same position taught at three rating tiers corrected a model that had been giving <em>sharper</em> advice to weaker players. Stockfish supplies the sound move pool; human-findability data (Maia-style) supplies plausibility.</li>
+      <li><strong>Every claim carries a verified-facts block</strong> — the coach may only <em>phrase</em> verified facts, never assert new ones.</li>
+    </ol>
+
+    <p><strong>Memory belongs in the application, not the weights</strong> — the ledger, patterns and retrieval are the memory; fine-tuning at most teaches <em>how to coach</em>, never <em>what happened</em>.</p>
+  </section>
+
+  <!-- Section 11 -->
+  <section class="section-block">
+    <div id="s11" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">11</span>
+      <h2 class="section-title">Non-Goals and Invariants</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <ul>
+      <li>No replacement of Stockfish, the engine pool, or the per-game Celery analysis shape.</li>
+      <li>No LLM-authored patterns, statistics or game references.</li>
+      <li>No rewrite of the pattern detectors' deterministic gate, the profile snapshot design, or the working pgvector path.</li>
+      <li>No <code class="inline">move_timing_data</code> table until clock data is actually ingested.</li>
+      <li>No new denormalised "player model" store beyond the versioned profile and the ledger.</li>
+      <li>Additive API changes only; existing endpoints keep their contracts.</li>
+    </ul>
+  </section>
+
+  <!-- Section 12 -->
+  <section class="section-block">
+    <div id="s12" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">12</span>
+      <h2 class="section-title">Phased Delivery</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Phase</th><th>Deliverable</th><th>Acceptance</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1 — Audit</strong></td>
+            <td>This document + <code class="inline">player-intelligence-phase1-audit.md</code>; stale docs corrected</td>
+            <td>As-built claims backed by code/schema evidence; change set agreed</td>
+            <td>✅ delivered (#309/#310)</td>
+          </tr>
+          <tr>
+            <td><strong>2 — Move facts + Events</strong></td>
+            <td><code class="inline">game_moves</code> (+backfill), eval-before, canonical classifier/phase, position features, <code class="inline">chess_events</code>, event detectors</td>
+            <td>For a fixture game, every event reproducible from stored rows; no LLM in the path</td>
+            <td>✅ delivered (#311/#312, hardened #315/#316): 143 backfilled games → 8,599 move rows, 1,789 events</td>
+          </tr>
+          <tr>
+            <td><strong>3 — Pattern engine v2</strong></td>
+            <td>Event-driven detectors, feature similarity, persisted evidence, <code class="inline">pattern_runs</code>, trend, strengths</td>
+            <td>A pattern's claim can be re-derived from the DB alone; trend differs when history differs</td>
+            <td>✅ delivered (#319/#320): 4,302 decisions → 28 context patterns + 3 strengths, every one with evidence, rate and trend</td>
+          </tr>
+          <tr>
+            <td><strong>4 — Retrieval</strong></td>
+            <td>Position/event-keyed similarity retrieval + relevance floors</td>
+            <td>Given a new event, the system returns the player's genuine similar history (or states none)</td>
+            <td>✅ delivered (#321/#322): three-stage match with pattern linkage; relevance floors applied to both paths</td>
+          </tr>
+          <tr>
+            <td><strong>5 — Player model + coaching memory</strong></td>
+            <td>Profile extensions, intervention ledger, progress states</td>
+            <td>Coach can answer "have I taught you this, and did it work?" from stored rows</td>
+            <td>✅ delivered (#325/#326, completed #348/#350): <code class="inline">coaching_interventions</code> + <code class="inline">coaching_history</code>; openings keyed by position with the sample flagged; <code class="inline">behavioural_hypotheses</code> measured against the player's own baseline</td>
+          </tr>
+          <tr>
+            <td><strong>6 — Coaching context</strong></td>
+            <td>Ranked context contract with budgets</td>
+            <td>Context contains the ten blocks, ranked, within budget; grounding rules hold</td>
+            <td>✅ delivered (#327/#328, hardened #333): ranked blocks, whole-block budgeting, grounding rule on all three context paths</td>
+          </tr>
+          <tr>
+            <td><strong>7 — Evaluation</strong></td>
+            <td>Fixture dataset, harness, scores, baseline recorded</td>
+            <td>Baseline numbers exist for every metric, on a player/game-split test set</td>
+            <td>✅ harness + baseline (#329/#330, corrected #335): 7/7 cases, pattern recall 1.0, precision 1.0, false-pattern rate 0.0, grounding violations 0</td>
+          </tr>
+          <tr>
+            <td><strong>8 — Fine-tuning (conditional)</strong></td>
+            <td>PEFT experiment, comparison, keep-on-win</td>
+            <td>Only if Phase 7 shows context is insufficient; else documented decision not to train</td>
+            <td>measurement built (#331/#332, #333): context half passes 12/12 on production; model half awaiting a provider-backed run</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Phases 2–3 are the critical path: until moves are relational and events exist, nothing downstream can be context-aware.</p>
+
+    <div id="s12-1"></div>
+    <h3 class="sub-heading">What Phase 2 delivered, verified on production</h3>
+    <p>143 existing analyses were backfilled without an engine call: <strong>8,599 move rows</strong> and <strong>1,789 events</strong> across 13 event types. Evidence that the layer is usable rather than merely populated:</p>
+    <ul>
+      <li>Non-mate user moves sit at <strong>p50 27 / p90 208 / p99 684 cp</strong> loss — plausible for the account's rating, and the mate-score bound keeps the tail honest (a raw ±10000 had put the blunder average at 3044 cp).</li>
+      <li><strong>72 position keys recur across games</strong> (the most common appears in 71 games, then 43 / 41 / 23 / 16), and the same pawn structures recur across 71 / 43 / 41 / 32 games — the substrate for "you keep reaching this position".</li>
+      <li><strong>1,129 events carry an opponent trigger</strong>, e.g. <em>after opponent played h7h6 → major_blunder ×7</em>, <em>after g8f6 → threat_unanswered ×6</em>. The "you struggle when opponents do X" capability is now queryable data rather than an aspiration.</li>
+    </ul>
+
+    <div id="s12-2"></div>
+    <h3 class="sub-heading">Phase 3 limit resolved: the mate sign convention is verified</h3>
+    <ul>
+      <li><del>Mate evaluations are reconstructed, not measured, and the sign convention is unverified.</del> <strong>Verified, and the gate rewritten.</strong> The analyzer still flattens mate to 0 cp, so mate scores are reconstructed from <code class="inline">mate_in</code> — but the convention that reconstruction assumes (<code class="inline">mate_in</code> is reported for the side to move <em>after</em> the move, i.e. the mover's opponent) was checked against the games themselves: across <strong>711 mate rows the implied mating side matched the eventual winner in 97 of 98 finished games</strong>, and in every mating sequence a positive <code class="inline">mate_in</code> on a Black move's row meant White was mating.
+        <p>The old safety gate then turned out to be backwards. It admitted mate rows only when the analyzer <em>also</em> called the move a mistake or blunder — but the analyzer cannot see mate, and labels <strong>602 of those 711 rows "best"</strong>, including both rows where a forced mate was thrown away (<code class="inline">+1200 → −1200</code>, <code class="inline">cp_loss = 2400</code>, classified "best"). So it admitted rows on a signal blind to mate while excluding the clearest blunders in the library.</p>
+        <p>Mate rows now produce events when the position <strong>reversed</strong> — the mover was mating and no longer is, or was not being mated and now is. Measured on production: 33 rows newly admitted (producing events across five types), and <strong>8 removed</strong> — every one an already-lost position that the move did not change, with <code class="inline">cp_loss = 0.0</code>, which the analyzer nevertheless labelled "blunder". A mate that merely got slower is not a blunder, and neither is a move made in a position already lost.</p>
+      </li>
+      <li><strong>Phase is still the move-number rule.</strong> <code class="inline">game_moves.phase</code> uses the canonical boundary so existing detectors stay consistent; the material-aware rule from §3 is not adopted yet. <code class="inline">simplified</code>, <code class="inline">material_band</code> and <code class="inline">queens_off</code> are stored per move precisely so it can be added later without re-deriving.</li>
+    </ul>
+
+    <div id="s12-3"></div>
+    <h3 class="sub-heading">The best-move defect, and what it says about the substrate</h3>
+    <p>Every stored ply carried the <strong>opponent's</strong> best reply as its "best move": the analyzer evaluated the board after pushing the move, so <code class="inline">current_eval['best_move']</code> belonged to whoever moved next, and <code class="inline">is_best = (move_uci == best_move)</code> compared the player's move against the opponent's — false for effectively every ply in the library. It surfaced as one wrong sentence in a coach context ("you played f2f4, better was b8c6"), and the fix is in <code class="inline">unified_analyzer._analyze_all_moves</code>, which now carries the <em>pre-move</em> evaluation's best move forward one ply (no extra engine call).</p>
+    <p>Confirmed by measurement rather than inspection: across 3,000 production rows, 1,492 stored best moves were illegal in their own position, <strong>2,982 were legal in <code class="inline">fen_after</code></strong> and <strong>0 in neither</strong> — which located the cause precisely. A separate check ruled out the competing hypothesis, since <code class="inline">structure_key</code>/<code class="inline">position_key</code> describe <code class="inline">fen_before</code> 200/200.</p>
+    <p>Consequences, for the record: patterns and events are <strong>unaffected</strong> (they gate on <code class="inline">cp_loss</code> from the stored evaluations); what was wrong was coaching text, the best-move statistic, and "best" classification. Rows written before the fix keep the wrong value, <code class="inline">similar_decisions</code> drops a best move that is illegal in its own position so no consumer can present it, and a re-analysis writes correct values.</p>
+    <p>Third finding of this shape in the project, so the lesson is now enforced rather than remembered: <strong>the substrate is audited by command, not by reading output closely.</strong> <code class="inline">scripts/audit_move_facts.py</code> checks keys against their positions, move legality against the recorded colour, <code class="inline">cp_loss</code> against its documented formula, mate flags, PV/best-move agreement and ply linkage, with no engine call. It currently passes on production: 8,599 rows, every invariant clean except the known-legacy best-move class.</p>
+    <p>Worth stating plainly, since it happened three times in one session: <strong>my own checkers produced more false alarms than the data produced defects</strong> — the audit first reported 5,830 phantom eval discontinuities (the perspective flip is the convention) and 269 phantom PV mismatches (the PV is stored as a stringified list). A checker needs the same verification as the code it checks, which is why the two conventions are now pinned by <code class="inline">tests/test_move_fact_conventions.py</code>.</p>
+
+    <div id="s12-4"></div>
+    <h3 class="sub-heading">What Phase 3 delivered, verified on production</h3>
+    <p>The engine now runs the original aggregate detectors <strong>and</strong> context-aware event detectors together, and everything is deterministic and LLM-free. On the live account: <strong>4,302 decisions → 28 context patterns + 3 strengths</strong>, persisted with evidence.</p>
+    <ul>
+      <li><strong>Patterns are rates, not counts.</strong> Every pattern stores <code class="inline">opportunity_count</code> (how often the player faced that situation) next to <code class="inline">occurrence_count</code>, so "7 blunders" cannot masquerade as a weakness when it happened in 900 decisions. Example from real data: <em>endgame technique failure in level, non-simplified positions after the opponent created a threat — <strong>36.7% of 79 opportunities</strong>, 29 times across 18 games, confidence 0.99, persistent</em>.</li>
+      <li><strong>Trend is measured, not stored.</strong> The decision series is split by game recency against the same denominators, and real data shows the full range: 22 persistent, 2 improving, 1 worsening. "Improving" means the recent games are measurably cleaner, not that a run happened.</li>
+      <li><strong>A direction needs a sample in both halves.</strong> Direction is a claim about change, so <code class="inline">trend_direction</code> is left NULL unless each half holds at least <code class="inline">MIN_OPPORTUNITIES_PER_HALF</code> (5) opportunities, with the reason recorded as <code class="inline">evidence.trend_suppressed</code>. Before this floor, a player whose two most recent decisions included one error read as "worsening" off a single data point, and a player who had barely played read as "improving" for the same reason. The pattern is still reported; it just carries no story about where it is going. Defaulting to "persistent" instead would have been its own unearned claim, since stability is also a claim.</li>
+      <li><strong>Strengths exist by the same standard</strong> — <code class="inline">solid_opening</code> (2.9% serious-error rate over 1,061 decisions), <code class="inline">solid_middlegame</code> (6.6%/1,728), <code class="inline">solid_endgame</code> (8.9%/1,513) — so the profile is not a list of failures. They count only high/critical events, because the event vocabulary fires liberally and counting every event disqualified every phase.</li>
+      <li><strong>Evidence is persisted and linked.</strong> Detectors used to compute an <code class="inline">evidence</code> dict and discard it; it is now stored, and occurrences carry <code class="inline">move_id</code>/<code class="inline">event_id</code>, so pattern → event → move → engine evaluation is walkable. All 29 occurrences of the top pattern carry their FEN, both evaluations and plain-language context.</li>
+      <li><strong>Run history exists</strong> (<code class="inline">pattern_runs</code>), so what each run saw is auditable, and patterns that no longer fire are pruned rather than left on the profile forever.</li>
+      <li><strong>The vocabulary rule applies to the UI, not just the coach.</strong> The Patterns page rendered stored fields directly, so a player could read <code class="inline">endgame_technique_failure__endgame|level|complex|triggered</code> as a title, see the internal severity token, and be told about "occurrences". Titles now use only the event-type half (the situation is already in the pattern's own sentence), severity is translated, counts read as a player would say them, and <code class="inline">persistent</code>/<code class="inline">resolved</code>/<code class="inline">new</code> render labels instead of nothing — they previously produced no trend line at all. Tests render the component against real stored strings and assert the raw signature never reaches the DOM.</li>
+    </ul>
+
+    <p>Three calibration decisions came out of running it against real data, and are worth keeping in mind for Phase 4:</p>
+    <ol>
+      <li><strong>The context signature had to be coarsened.</strong> Including the exact pawn-structure key produced near-unique signatures — 4,302 decisions pooled into groups of eight or fewer, so nothing reached a sample threshold. Structure is now reported as evidence, not used as a grouping key.</li>
+      <li><strong>"Triggered" needed a real definition.</strong> Treating it as "an opponent moved before this one" is true for every move after the first; it now means the mover had a piece hanging or the opponent's previous move was itself an error.</li>
+      <li><strong>Persistence is capped to the actionable head</strong> (top 25 weaknesses, plus strengths). Detection stays inclusive because the evidence is the asset, but a profile listing 168 weaknesses is the same as listing none; the tail is deterministic and recomputable.</li>
+    </ol>
+
+    <div id="s12-5"></div>
+    <h3 class="sub-heading">What Phase 5 delivered, and one measurement that changed it</h3>
+    <p>Two things the plan specified only in outline, both closing here:</p>
+    <ul>
+      <li><strong>Openings keyed by position, not by name.</strong> The plan said "by structure/position key"; measured on real data, the exact pawn-skeleton key is <em>one-per-game</em> — 143 games reached <strong>136 distinct structures</strong>, 132 of them too thin to judge. A table of groups of one supports no claim, so the view now reports both the structure groups (each flagged <code class="inline">sample_sufficient</code>, with error/score rates, the names that reach it, and the patterns that fired there) <strong>and</strong> whether a repertoire exists at all: <code class="inline">settled</code>, <code class="inline">main_line_only</code> or <code class="inline">no_repertoire</code>, from how concentrated the first four plies are. That player measured 69 lines across 143 games with 17 on the main line — "one main line, but too spread out for openings to repeat and be corrected", which is the honest read and exactly what the ChessReps hand-off exists to fix.</li>
+      <li><strong>Behavioural hypotheses</strong> (<code class="inline">player_profiles.behavioural_hypotheses</code>, migration 0018): <em>when</em> the player's decisions go wrong, compared against <strong>their own baseline</strong>, never against other players or an absolute standard. Four dimensions (opponent trigger, complexity, material state, phase). Each claim needs ≥20 decisions on both sides, a ≥1.5× rate ratio and a ≥5-point gap, carries its thresholds and the pattern ids detected in exactly those situations, and is worded about decisions in positions — never about the person. On real data (4,302 decisions, 37 patterns) <strong>exactly one hypothesis survived</strong>; the other three dimensions were refused for want of evidence, which is the intended behaviour rather than a shortfall.</li>
+    </ul>
+
+    <div id="s12-6"></div>
+    <h3 class="sub-heading">What Phase 4 delivered, verified on production</h3>
+    <p>Retrieval over the player's own decisions (<code class="inline">services/retrieval/similar_decisions.py</code>), answering <em>"have I seen this player in this situation before, what did they do, how did it end?"</em> in three stages: same <code class="inline">position_key</code>, then same structure and phase, then a weighted feature distance (phase 0.30, material state 0.25, complexity 0.15, threat picture 0.15, mobility 0.10, trigger 0.05). Every match carries the played move, the engine's better move, the loss, the game result, and <strong>the pattern it is already evidence for</strong>, so a retrieved memory connects to a named weakness.</p>
+    <p>Verified live for a real critical <code class="inline">threat_unanswered</code> event (game 2260 move 38, played <code class="inline">f6f7</code>, engine preferred <code class="inline">f8h6</code>): five genuinely similar past decisions across three games, two already linked to the <code class="inline">endgame_technique_failure</code> pattern.</p>
+    <p>The relevance-floor gap from the audit is closed: <code class="inline">retrieve_semantic_memories</code> had defaulted <code class="inline">min_similarity</code> to <code class="inline">0.0</code> and no caller passed it, so every stored memory counted as relevant. It is now <code class="inline">0.3</code>, position retrieval has its own <code class="inline">0.62</code> floor, and exact/structure matches bypass it deliberately.</p>
+    <p>Three flaws were found by running it rather than by reading it:</p>
+    <ol>
+      <li><strong>Structure was a filter, not a ranking signal</strong> — an exact pawn skeleton returned zero candidates for a real endgame where similar positions existed. Stage 2 exists to widen the search, so structure now ranks instead of gating.</li>
+      <li><strong>Evidence clustered in one game</strong> — four of five matches came from a single game, and "you did this three times" is weaker than "you did this in three different games", so matches are capped at two per game and the scan orders by game recency rather than row insertion.</li>
+      <li><strong>Match kind must outrank score</strong> — a feature score of 1.0 could tie with an exact position recurrence and displace it (this one was caught by a unit test).</li>
+    </ol>
+  </section>
+
+  <!-- Section 13 -->
+  <section class="section-block">
+    <div id="s13" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">13</span>
+      <h2 class="section-title">Research Summary and Model Landscape</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <p>This design was checked against prior art; the findings are integrated in the sections above (§4 events, §6 retrieval, §10 evaluation, §12 fine-tuning). This section records the remaining positioning notes and the sources that did <strong>not</strong> fit inline.</p>
+
+    <p><strong>The model landscape has moved past older assumptions.</strong> GLM-4.5 has been superseded by GLM-5.x, Qwen3 by Qwen3.x, and DeepSeek V3/R1 by the V4 family — so Phase 7 model selection must be re-verified at the time it happens rather than fixed now. What is stable: the licences (MIT/Apache-2.0 for the open families), the MoE-vs-dense VRAM reality, and the OpenAI-compatible serving pattern that ChessRun's <code class="inline">LLM_LOCAL_*</code> configuration already assumes.</p>
+
+    <p><strong>Neural-engine backbones as chess embeddings.</strong> MAIA/Leela-family networks have been used as embedding backbones for player and position representation (<a href="https://annals-csis.org/proceedings/2025/pliks/fedcsis.pdf">FedCSIS 2025</a>), and players can be embedded into a discriminating space directly from their games (<a href="https://fse.studenttheses.ub.rug.nl/34065/1/BP-Lennart-August-s4800036.pdf">thesis: embedding players from games</a>). Both are viable later stages, both inherit their backbone's bias, and neither replaces an evaluated deterministic baseline.</p>
+
+    <p><strong>Engine-selected moves do not justify their own explanations.</strong> Practical chess-LLM engineering notes make the point sharply: once the engine picks a move, surrounding prose does not inherit the engine's justification (<a href="https://github.com/Alpha-AI-Engineering-Khoi/chess-instructor-llm/blob/86d834cf1f062fefc0a290d57dcc7c4d74e08a55/BRAINLIFT.md">chess-instructor-llm notes</a>) — hence the evidence-chain requirement rather than "engine says so" as a grounding claim.</p>
+
+    <p><strong>Where the evidence is thin.</strong> There is no maintained general-purpose chess position-similarity library, no standard similarity benchmark beyond the SIGIR 2014 work, and no public dataset labelling mistakes by cause. Each of those gaps means ChessRun must label its own evaluation data rather than adopt an external ground truth — which is itself an argument for building the Phase 6 harness early.</p>
+  </section>
+
+  <!-- Section 14 -->
+  <section class="section-block">
+    <div id="s14" class="section-anchor"></div>
+    <div class="section-heading">
+      <span class="section-ghost-num">14</span>
+      <h2 class="section-title">Open Questions</h2>
+    </div>
+    <div class="section-divider"></div>
+
+    <ol>
+      <li>Position features: is a normalised key + ~6 numeric features sufficient, or is a learned position embedding required for "similar circumstances"? (Decides whether Layer 4 stage 2 needs pgvector.)</li>
+      <li>Event vocabulary sign-off and versioning owner.</li>
+      <li>Clock data availability for synced accounts (gates time-pressure patterns).</li>
+      <li>Trend definition: <strong>minimum sample decided</strong> — equal halves of the player's opportunities, ≥5 per half or no direction is claimed (§13). Still open: whether equal halves beat a rolling window once players have enough games, and whether the rate should be per opportunity or per game.</li>
+      <li>Evaluation data sourcing: fixtures vs opt-in real games, given production currently holds one real player.</li>
+    </ol>
+  </section>
+
+</div>
+</main>
+
+<button id="back-to-top" title="Back to top">↑</button>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="../../assets/scripts/doc-suite.js"></script>
+</body>
+</html>
